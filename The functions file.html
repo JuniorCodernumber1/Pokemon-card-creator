@@ -1,4 +1,2285 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAVAL SUPREMACY</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&display=swap');
+:root{
+  --us-col:#4a9eff;--ru-col:#ff4a4a;--uk-col:#88ddff;--sa-col:#e8a020;
+  --yellow:#ffd700;--green:#39ff14;--red:#ff2222;--orange:#ff8c00;
+  --bg:#050d1a;--ui-bg:rgba(0,0,0,0.82);--border:rgba(100,180,255,0.22);
+  --text:#c8e0ff;--dim:#4a6a8a;
+  --pcol:#4a9eff;--ecol:#ff4a4a;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);font-family:'Share Tech Mono',monospace;color:var(--text);overflow:hidden;height:100vh;width:100vw;cursor:crosshair;}
+canvas{display:block;position:absolute;top:0;left:0;}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(2,8,18,0.96);z-index:200;pointer-events:all;}
+.screen.hidden{display:none!important;}
+.big-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(40px,7vw,78px);letter-spacing:8px;color:var(--yellow);text-shadow:0 0 40px rgba(255,215,0,0.5);margin-bottom:6px;}
+.sub{font-size:11px;letter-spacing:5px;color:var(--dim);margin-bottom:32px;}
+.choose-lbl{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:5px;color:var(--dim);margin-bottom:24px;}
+.cards{display:flex;gap:24px;margin-bottom:32px;}
+.card{background:rgba(0,0,0,0.6);border:2px solid rgba(255,255,255,0.08);padding:24px 28px;cursor:pointer;text-align:center;transition:all .25s;min-width:230px;}
+.card.us-c:hover,.card.us-c.sel{border-color:var(--us-col);background:rgba(74,158,255,0.1);box-shadow:0 0 36px rgba(74,158,255,0.22);}
+.card.ru-c:hover,.card.ru-c.sel{border-color:var(--ru-col);background:rgba(255,74,74,0.1);box-shadow:0 0 36px rgba(255,74,74,0.22);}
+.cflag{font-size:40px;margin-bottom:8px;}
+.cname{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:4px;margin-bottom:10px;}
+.us-c .cname{color:var(--us-col);}
+.ru-c .cname{color:var(--ru-col);}
+.cships{font-size:9px;color:var(--dim);line-height:1.9;text-align:left;}
+.cships .ally{color:rgba(180,210,255,0.7);}
+.cships .en{color:rgba(255,150,150,0.6);}
+.sbtn{background:transparent;border:2px solid var(--yellow);color:var(--yellow);font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:5px;padding:12px 44px;cursor:pointer;transition:all .2s;text-shadow:0 0 18px rgba(255,215,0,0.4);box-shadow:0 0 28px rgba(255,215,0,0.12);}
+.sbtn:hover{background:rgba(255,215,0,0.11);box-shadow:0 0 55px rgba(255,215,0,0.32);}
+.sbtn:disabled{opacity:.3;cursor:not-allowed;}
+.inst{margin-top:16px;font-size:9px;color:var(--dim);letter-spacing:2px;text-align:center;line-height:2.2;}
+#ui{position:absolute;inset:0;pointer-events:none;}
+#topBar{position:absolute;top:0;left:0;right:0;height:46px;background:linear-gradient(180deg,rgba(0,0,0,0.9) 0%,transparent 100%);display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--border);}
+#gTitle{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:4px;color:var(--yellow);}
+#timer{font-size:16px;letter-spacing:2px;}
+#score{position:absolute;top:51px;left:50%;transform:translateX(-50%);display:flex;gap:22px;align-items:center;background:var(--ui-bg);border:1px solid var(--border);padding:5px 16px;font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:3px;}
+.sp{color:var(--pcol);}.se{color:var(--ecol);}.ss{color:var(--dim);font-size:13px;}
+#shipSel{position:absolute;bottom:112px;left:50%;transform:translateX(-50%);display:flex;gap:4px;flex-wrap:wrap;justify-content:center;max-width:96vw;pointer-events:all;}
+.sbtn2{background:var(--ui-bg);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:8px;padding:4px 6px;cursor:pointer;transition:all .2s;text-align:center;min-width:62px;line-height:1.5;}
+.sbtn2:hover{border-color:var(--pcol);color:var(--pcol);}
+.sbtn2.active{background:rgba(74,158,255,0.16);border-color:var(--pcol);color:var(--pcol);}
+.sbtn2.dead{opacity:.22;text-decoration:line-through;pointer-events:none;}
+.sbtn2 .sc{font-size:7px;color:var(--dim);}
+#pHUD{position:absolute;bottom:7px;left:7px;background:var(--ui-bg);border:1px solid var(--pcol);padding:9px 13px;min-width:205px;box-shadow:0 0 16px rgba(74,158,255,0.1);}
+#eHUD{position:absolute;bottom:7px;right:7px;background:var(--ui-bg);border:1px solid var(--ecol);padding:9px 13px;min-width:205px;box-shadow:0 0 16px rgba(255,74,74,0.1);}
+.htit{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;margin-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:3px;}
+#pHUD .htit{color:var(--pcol);}#eHUD .htit{color:var(--ecol);}
+.sr{display:flex;justify-content:space-between;font-size:10px;margin:2px 0;}
+.sl{color:var(--dim);}.sv{color:var(--text);}
+.bc{width:100%;height:4px;background:rgba(255,255,255,0.07);margin:2px 0 4px;}
+.bar{height:100%;transition:width .3s;}
+#minimap{position:absolute;top:56px;right:7px;width:172px;height:112px;background:rgba(0,6,18,0.92);border:1px solid var(--border);}
+#mmCanvas{display:block;}
+#kf{position:absolute;top:56px;left:7px;width:265px;display:flex;flex-direction:column;gap:3px;}
+.ke{background:rgba(0,0,0,0.75);border-left:3px solid var(--yellow);padding:3px 7px;font-size:9px;animation:fi .3s ease;color:var(--text);}
+.ke.p{border-color:var(--pcol);}.ke.e{border-color:var(--ecol);}
+@keyframes fi{from{opacity:0;transform:translateX(-7px);}to{opacity:1;}}
+#xh{position:absolute;pointer-events:none;transform:translate(-50%,-50%);}
+#rBar{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);width:185px;height:3px;background:rgba(255,255,255,0.07);}
+#rFill{height:100%;background:var(--yellow);transition:width .1s;}
+#tBar{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);width:185px;height:3px;background:rgba(255,255,255,0.07);}
+#tFill{height:100%;background:#00ffcc;transition:width .1s;}
+#ctrl{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font-size:8px;color:var(--dim);letter-spacing:1px;white-space:nowrap;}
+#dmg{position:absolute;inset:0;background:rgba(255,0,0,0);pointer-events:none;transition:background .06s;}
+#tw{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:5px;color:var(--red);text-shadow:0 0 28px rgba(255,0,0,0.8);display:none;animation:bk .4s infinite;pointer-events:none;}
+@keyframes bk{50%{opacity:0;}}
+#fm{position:absolute;top:96px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--yellow);letter-spacing:3px;opacity:0;transition:opacity .3s;}
+/* ── WIN / LOSE SCREENS ── */
+#winScr,#loseScr{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;z-index:300;pointer-events:all;
+  overflow:hidden;
+}
+#winScr{background:radial-gradient(ellipse at 50% 60%,#002a00 0%,#000d00 55%,#000500 100%);}
+#loseScr{background:radial-gradient(ellipse at 50% 40%,#2a0000 0%,#0d0000 55%,#050000 100%);}
+#winScr.hidden,#loseScr.hidden{display:none!important;}
+
+/* Animated background canvas */
+#winVfxCanvas,#loseVfxCanvas{position:absolute;inset:0;pointer-events:none;z-index:0;}
+
+/* All content above canvas */
+.result-content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;width:100%;}
+
+/* Top accent line */
+.result-topline{
+  width:0;height:3px;margin-bottom:28px;
+  animation:lineExpand 0.9s 0.1s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+#winScr .result-topline{background:linear-gradient(90deg,transparent,#ffd700,#ffe066,#ffd700,transparent);}
+#loseScr .result-topline{background:linear-gradient(90deg,transparent,#ff2222,#ff6666,#ff2222,transparent);}
+@keyframes lineExpand{to{width:440px;}}
+
+/* Main outcome word */
+.result-banner{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(60px,11vw,120px);
+  letter-spacing:14px;
+  margin-bottom:0px;
+  opacity:0;
+  animation:bannerSlam 0.5s 0.4s cubic-bezier(0.1,1.5,0.4,1) forwards;
+}
+@keyframes bannerSlam{
+  0%{opacity:0;transform:scale(2.2) translateY(-20px);filter:blur(12px);}
+  60%{opacity:1;transform:scale(0.96) translateY(2px);filter:blur(0);}
+  100%{opacity:1;transform:scale(1) translateY(0);filter:blur(0);}
+}
+#winScr .result-banner{
+  color:#ffd700;
+  text-shadow:0 0 30px rgba(255,215,0,0.9),0 0 80px rgba(255,215,0,0.5),0 0 160px rgba(255,200,0,0.2);
+}
+#loseScr .result-banner{
+  color:#ff2222;
+  text-shadow:0 0 30px rgba(255,0,0,0.9),0 0 80px rgba(255,0,0,0.5),0 0 160px rgba(200,0,0,0.2);
+}
+
+/* Faction subtitle */
+.result-faction{
+  font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:6px;
+  margin-bottom:6px;margin-top:6px;
+  opacity:0;animation:riseIn 0.6s 0.75s ease forwards;
+}
+#winScr .result-faction{color:rgba(200,255,200,0.85);}
+#loseScr .result-faction{color:rgba(255,180,180,0.85);}
+
+/* Map name */
+.result-mapname{
+  font-size:10px;letter-spacing:4px;color:var(--dim);margin-bottom:26px;
+  opacity:0;animation:riseIn 0.6s 0.9s ease forwards;
+}
+@keyframes riseIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+/* Horizontal rule */
+.result-rule{
+  width:0;height:1px;margin-bottom:28px;
+  animation:lineExpand 0.7s 1.0s ease forwards;
+}
+#winScr .result-rule{background:linear-gradient(90deg,transparent,rgba(255,215,0,0.4),transparent);}
+#loseScr .result-rule{background:linear-gradient(90deg,transparent,rgba(255,50,50,0.4),transparent);}
+
+/* Stats row */
+.stats-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px 28px;
+  margin-bottom:26px;opacity:0;
+  animation:riseIn 0.6s 1.1s ease forwards;
+}
+.stat-block{text-align:center;min-width:90px;}
+.stat-num{
+  font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:2px;line-height:1;
+}
+.stat-lbl{font-size:8px;letter-spacing:2.5px;color:var(--dim);margin-top:3px;}
+#winScr .stat-num{color:#ffd700;}
+#loseScr .stat-num{color:#ff4444;}
+
+/* Medals */
+.medals{
+  display:flex;gap:12px;flex-wrap:wrap;justify-content:center;
+  margin-bottom:26px;opacity:0;
+  animation:riseIn 0.6s 1.3s ease forwards;
+}
+.medal{
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.1);
+  padding:9px 16px;text-align:center;
+  font-size:8px;letter-spacing:2px;color:rgba(200,200,200,0.7);
+  transition:all 0.2s;min-width:80px;
+}
+.medal:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.25);}
+.medal-icon{font-size:24px;display:block;margin-bottom:5px;}
+
+/* Flavour quote */
+.flavour{
+  font-size:12px;letter-spacing:2px;max-width:500px;text-align:center;
+  line-height:2;margin-bottom:32px;font-style:italic;
+  opacity:0;animation:riseIn 0.6s 1.5s ease forwards;
+}
+#winScr .flavour{color:rgba(180,255,180,0.5);}
+#loseScr .flavour{color:rgba(255,180,180,0.4);}
+.flavour::before{content:'"';margin-right:4px;opacity:0.5;}
+.flavour::after{content:'"';margin-left:4px;opacity:0.5;}
+
+/* Bottom rule */
+.result-rule2{
+  width:0;height:1px;margin-bottom:24px;
+  animation:lineExpand 0.7s 1.6s ease forwards;
+}
+#winScr .result-rule2{background:linear-gradient(90deg,transparent,rgba(255,215,0,0.25),transparent);}
+#loseScr .result-rule2{background:linear-gradient(90deg,transparent,rgba(255,50,50,0.25),transparent);}
+
+/* Buttons */
+.result-btns{
+  display:flex;gap:14px;
+  opacity:0;animation:riseIn 0.6s 1.7s ease forwards;
+}
+.rbtn{
+  background:transparent;font-family:'Bebas Neue',sans-serif;
+  font-size:16px;letter-spacing:4px;padding:11px 36px;
+  cursor:pointer;transition:all 0.2s;border:2px solid;
+}
+.rbtn-primary{border-color:var(--yellow);color:var(--yellow);text-shadow:0 0 16px rgba(255,215,0,0.4);}
+.rbtn-primary:hover{background:rgba(255,215,0,0.12);box-shadow:0 0 40px rgba(255,215,0,0.25);}
+.rbtn-secondary{border-color:rgba(255,255,255,0.2);color:rgba(255,255,255,0.4);}
+.rbtn-secondary:hover{border-color:rgba(255,255,255,0.4);color:rgba(255,255,255,0.7);}
+.map-grid{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:28px;max-width:920px;}
+.map-card{background:rgba(0,0,0,0.55);border:2px solid rgba(255,255,255,0.08);cursor:pointer;transition:all .25s;width:162px;overflow:hidden;}
+.map-card:hover{transform:translateY(-3px);border-color:rgba(255,215,0,0.5);box-shadow:0 0 26px rgba(255,215,0,0.18);}
+.map-card.sel{border-color:var(--yellow);box-shadow:0 0 34px rgba(255,215,0,0.32);transform:translateY(-4px);}
+.map-preview{width:100%;height:78px;display:block;}
+.map-info{padding:8px 10px 10px;}
+.map-name{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:3px;color:var(--yellow);margin-bottom:3px;}
+.map-loc{font-size:9px;color:var(--text);margin-bottom:3px;}
+.map-desc{font-size:8px;color:var(--dim);line-height:1.5;}
+.map-tag{display:inline-block;font-size:7px;letter-spacing:1px;padding:1px 5px;margin-top:5px;border:1px solid;opacity:0.75;}
+.tag-storm{color:#aaccff;border-color:#4466aa;}
+.tag-clear{color:#aaffaa;border-color:#44aa44;}
+.tag-fog{color:#ddddaa;border-color:#888866;}
+.tag-night{color:#aaaaff;border-color:#5555aa;}
+.tag-dusk{color:#ffaa66;border-color:#aa6622;}
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<div id="dmg"></div>
+<div id="fm"></div>
+
+<!-- SIDE SELECT -->
+<div class="screen" id="sideScr">
+  <div class="big-title">NAVAL SUPREMACY</div>
+  <div class="sub">NORTH ATLANTIC CONFLICT · CHOOSE YOUR ALLEGIANCE</div>
+  <div class="choose-lbl">SELECT YOUR SIDE</div>
+  <div class="cards">
+    <div class="card us-c" onclick="selectSide('us')">
+      <div class="cflag">🇺🇸🇬🇧</div>
+      <div class="cname">Allied Forces</div>
+      <div class="cships">
+        <span class="ally">▸ USS Rhode Island — Carrier</span>
+        <span class="ally">▸ USS Roberts — Battlecruiser</span>
+        <span class="ally">▸ USS Pennsylvania — Heavy Cruiser</span>
+        <span class="ally">▸ USS Bennington — Frigate</span>
+        <span class="ally">▸ USS Freight — Cargo</span>
+        <span class="ally">▸ USS Health — Medical</span>
+        <span class="ally">▸ HMS Alister P. Wynn — Destroyer</span>
+        <span class="ally">▸ BRP Pilipia — Battleship (PH)</span>
+        <span class="ally">▸ INS Isania — Heavy Battleship (IL)</span>
+        <span class="ally">▸ S-Portia — Submarine (BR)</span>
+        <span class="ally">▸ FS Fancia — Battlecruiser (FR)</span>
+        <span class="ally">▸ FS Fancia — Destroyer (FR)</span>
+        <span style="font-size:8px;color:#333;display:block;margin-top:4px;">ENEMIES:</span>
+        <span class="en">▸ CKA-Lenin · ZAB-Putin · AND-Vladimir</span>
+        <span class="en">▸ LCS-Gorbachev · BAN-Wystov · FJK-Stalin · SD Onia · 366 Lisiania</span>
+      </div>
+    </div>
+    <div class="card ru-c" onclick="selectSide('ru')">
+      <div class="cflag">🇷🇺🇸🇦</div>
+      <div class="cname">Eastern Coalition</div>
+      <div class="cships">
+        <span class="ally">▸ CKA-Lenin — Battleship</span>
+        <span class="ally">▸ ZAB-Putin — Carrier</span>
+        <span class="ally">▸ AND-Vladimir — Destroyer</span>
+        <span class="ally">▸ LCS-Gorbachev — LCS</span>
+        <span class="ally">▸ BAN-Wystov — Cruiser</span>
+        <span class="ally">▸ FJK-Stalin — Sub-Monitor</span>
+        <span class="ally">▸ SD Onia — Cruiser (SA)</span>
+        <span class="ally">▸ 366 Lisiania — Battleship (CN)</span>
+        <span class="ally">▸ CFT Yeltsin — Cruiser</span>
+        <span style="font-size:8px;color:#333;display:block;margin-top:4px;">ENEMIES:</span>
+        <span class="en">▸ USS Rhode Island · USS Roberts · USS Pennsylvania · BRP Pilipia · INS Isania</span>
+        <span class="en">▸ USS Bennington · USS Freight · USS Health · HMS Alister</span>
+      </div>
+    </div>
+  </div>
+  <button class="sbtn" id="depBtn" onclick="goToMapSelect()" disabled>SELECT A SIDE FIRST</button>
+  <div class="inst">W · FORWARD &nbsp;|&nbsp; S · REVERSE &nbsp;|&nbsp; A/D · TURN &nbsp;|&nbsp; CLICK · FIRE<br>[T] TORPEDO &nbsp;|&nbsp; [F] AA &nbsp;|&nbsp; [E] TOGGLE FIRE MODE &nbsp;|&nbsp; 1-7 SWITCH SHIP</div>
+</div>
+
+<!-- MAP SELECT -->
+<div class="screen hidden" id="mapScr">
+  <div class="big-title">NAVAL SUPREMACY</div>
+  <div class="sub">SELECT YOUR BATTLEGROUND</div>
+  <div class="map-grid" id="mapGrid"></div>
+  <button class="sbtn" id="mapBtn" onclick="confirmMap()" disabled>SELECT A MAP FIRST</button>
+  <div class="inst" style="margin-top:14px;">Each theatre has unique weather, visibility, and sea conditions</div>
+</div>
+
+<!-- WIN SCREEN -->
+<div id="winScr" class="hidden">
+  <canvas id="winVfxCanvas"></canvas>
+  <div class="result-content">
+    <div class="result-topline"></div>
+    <div class="result-banner">VICTORY</div>
+    <div class="result-faction" id="winFaction">ALLIED FORCES VICTORIOUS</div>
+    <div class="result-mapname" id="winMapName">NORTH ATLANTIC</div>
+    <div class="result-rule"></div>
+    <div class="stats-grid" id="winStats"></div>
+    <div class="medals" id="winMedals"></div>
+    <div class="result-rule2"></div>
+    <div class="flavour" id="winFlavour"></div>
+    <div class="result-btns">
+      <button class="rbtn rbtn-primary" onclick="replayGame()">⟳ REDEPLOY</button>
+      <button class="rbtn rbtn-secondary" onclick="showSideSelect()">⌂ MAIN MENU</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOSE SCREEN -->
+<div id="loseScr" class="hidden">
+  <canvas id="loseVfxCanvas"></canvas>
+  <div class="result-content">
+    <div class="result-topline"></div>
+    <div class="result-banner">DEFEATED</div>
+    <div class="result-faction" id="loseFaction">FLEET ANNIHILATED</div>
+    <div class="result-mapname" id="loseMapName">NORTH ATLANTIC</div>
+    <div class="result-rule"></div>
+    <div class="stats-grid" id="loseStats"></div>
+    <div class="medals" id="loseMedals"></div>
+    <div class="result-rule2"></div>
+    <div class="flavour" id="loseFlavour"></div>
+    <div class="result-btns">
+      <button class="rbtn rbtn-primary" onclick="replayGame()">⟳ TRY AGAIN</button>
+      <button class="rbtn rbtn-secondary" onclick="showSideSelect()">⌂ MAIN MENU</button>
+    </div>
+  </div>
+</div>
+
+<!-- HUD -->
+<div id="ui" style="display:none;">
+  <div id="topBar">
+    <div id="gTitle">⚓ NAVAL SUPREMACY</div>
+    <div id="timer">00:00</div>
+    <div style="font-size:10px;color:var(--dim);letter-spacing:2px;" id="locLbl">NORTH ATLANTIC</div>
+  </div>
+  <div id="score">
+    <span class="sp"><span id="pLbl">ALLIED</span> <span id="pSc">0</span></span>
+    <span class="ss">VS</span>
+    <span class="se"><span id="eSc">0</span> <span id="eLbl">EASTERN</span></span>
+  </div>
+  <div id="kf"></div>
+  <canvas id="mmCanvas" width="172" height="112"></canvas>
+  <div id="minimap" style="display:none;"></div>
+  <div id="pHUD">
+    <div class="htit">▸ <span id="pName">—</span></div>
+    <div class="sr"><span class="sl">CLASS</span><span class="sv" id="pCls">—</span></div>
+    <div class="sr"><span class="sl">HULL</span><span class="sv" id="pHP">100%</span></div>
+    <div class="bc"><div class="bar" id="pHPbar" style="width:100%;background:var(--green)"></div></div>
+    <div class="sr"><span class="sl">SPEED</span><span class="sv" id="pSpd">—</span></div>
+    <div class="sr"><span class="sl">ARMOR</span><span class="sv" id="pArm">—</span></div>
+    <div class="sr"><span class="sl">TORPS</span><span class="sv" id="pTrp">—</span></div>
+  </div>
+  <div id="eHUD">
+    <div class="htit">TARGET: <span id="tName">—</span></div>
+    <div class="sr"><span class="sl">CLASS</span><span class="sv" id="tCls">—</span></div>
+    <div class="sr"><span class="sl">HULL</span><span class="sv" id="tHP">—</span></div>
+    <div class="bc"><div class="bar" id="tHPbar" style="width:100%;background:var(--red)"></div></div>
+    <div class="sr"><span class="sl">RANGE</span><span class="sv" id="tRng">—</span></div>
+    <div class="sr"><span class="sl">STATUS</span><span class="sv" id="tSts">SEARCHING</span></div>
+  </div>
+  <div id="shipSel"></div>
+  <div id="rBar"><div id="rFill" style="width:100%"></div></div>
+  <div id="tBar"><div id="tFill" style="width:100%"></div></div>
+  <div id="ctrl">W/S·THROTTLE &nbsp;|&nbsp; A/D·TURN &nbsp;|&nbsp; CLICK·FIRE &nbsp;|&nbsp; T·TORP &nbsp;|&nbsp; F·AA &nbsp;|&nbsp; P·LAUNCH PLANE &nbsp;|&nbsp; E·MODE</div>
+  <div id="tw">⚠ TORPEDO INCOMING ⚠</div>
+  <div id="xh">
+    <svg width="44" height="44" viewBox="0 0 44 44">
+      <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,215,0,0.6)" stroke-width="1"/>
+      <circle cx="22" cy="22" r="2.5" fill="rgba(255,215,0,0.9)"/>
+      <line x1="22" y1="1" x2="22" y2="11" stroke="rgba(255,215,0,0.6)" stroke-width="1"/>
+      <line x1="22" y1="33" x2="22" y2="43" stroke="rgba(255,215,0,0.6)" stroke-width="1"/>
+      <line x1="1" y1="22" x2="11" y2="22" stroke="rgba(255,215,0,0.6)" stroke-width="1"/>
+      <line x1="33" y1="22" x2="43" y2="22" stroke="rgba(255,215,0,0.6)" stroke-width="1"/>
+    </svg>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════
+const FLEETS={
+  us:[
+    {name:"USS Rhode Island",  cls:"Carrier",       len:600,armor:"5\" Steel",  turrets:5, torps:6, aa:6, speed:31,hp:560,sym:"CV",nation:"us",prof:"carrier"},
+    {name:"USS Roberts",       cls:"Battlecruiser", len:540,armor:"5\" Steel",  turrets:8, torps:6, aa:8, speed:28,hp:600,sym:"BC",nation:"us",prof:"battlecruiser"},
+    {name:"USS Pennsylvania",  cls:"Heavy Cruiser", len:500,armor:"4.5\" Steel",turrets:6, torps:4, aa:8, speed:30,hp:460,sym:"CA",nation:"us",prof:"cruiser"},
+    {name:"USS Bennington",    cls:"Frigate",       len:360,armor:"2\" Steel",  turrets:5, torps:2, aa:18,speed:36,hp:200,sym:"FF",nation:"us",prof:"frigate"},
+    {name:"USS Freight",       cls:"Cargo",         len:800,armor:"5\" Steel",  turrets:0, torps:0, aa:0, speed:22,hp:600,sym:"CG",nation:"us",prof:"cargo"},
+    {name:"USS Health",        cls:"Medical",       len:365,armor:"1\" Steel",  turrets:1, torps:0, aa:2, speed:24,hp:150,sym:"HS",nation:"us",prof:"medical"},
+    {name:"HMS Alister P. Wynn",cls:"Destroyer",    len:570,armor:"3.5\" Steel",turrets:6, torps:10,aa:8, speed:33,hp:320,sym:"DD",nation:"uk",prof:"destroyer"},
+    {name:"BRP Pilipia",          cls:"Battleship",  len:620,armor:"3\" Titanium",turrets:7, torps:10,aa:4, speed:27,hp:520,sym:"BB",nation:"ph",prof:"battleship"},
+    {name:"INS Isania",            cls:"Heavy Battleship",len:780,armor:"10\" Steel",turrets:20,torps:4, aa:0, speed:20,hp:900,sym:"HB",nation:"il",prof:"battleship"},
+    {name:"S-Portia",              cls:"Submarine",      len:280,armor:"5\" Steel",  turrets:0, torps:10,aa:0, speed:24,hp:260,sym:"SS",nation:"br",prof:"submonitor"},
+    {name:"FS Fancia",             cls:"Destroyer",      len:520,armor:"3\" Titanium",turrets:10,torps:10,aa:10,speed:34,hp:420,sym:"DD",nation:"fr",prof:"destroyer"},
+  ],
+  ru:[
+    {name:"CKA-Lenin",    cls:"Battleship",  len:900,armor:"5\" Titanium",turrets:12,torps:14,aa:8,speed:35,hp:700,sym:"BB",nation:"ru",prof:"battleship"},
+    {name:"ZAB-Putin",    cls:"Carrier",     len:900,armor:"3\" Titanium",turrets:2, torps:6, aa:6,speed:36,hp:600,sym:"CV",nation:"ru",prof:"carrier"},
+    {name:"AND-Vladimir", cls:"Destroyer",   len:450,armor:"3\" Steel",   turrets:8, torps:4, aa:8,speed:32,hp:280,sym:"DD",nation:"ru",prof:"destroyer"},
+    {name:"LCS-Gorbachev",cls:"LCS",         len:400,armor:"3\" Steel",   turrets:5, torps:8, aa:8,speed:38,hp:220,sym:"LC",nation:"ru",prof:"frigate"},
+    {name:"BAN-Wystov",   cls:"Cruiser",     len:380,armor:"4\" Steel",   turrets:4, torps:4, aa:4,speed:31,hp:300,sym:"CL",nation:"ru",prof:"cruiser"},
+    {name:"FJK-Stalin",   cls:"Sub-Monitor", len:180,armor:"4\" Steel",   turrets:6, torps:6, aa:0,speed:22,hp:250,sym:"SM",nation:"ru",prof:"submonitor"},
+    {name:"SD Onia",      cls:"Cruiser",     len:420,armor:"3\" Steel",   turrets:6, torps:10,aa:4,speed:30,hp:320,sym:"CR",nation:"sa",prof:"cruiser"},
+    {name:"366 Lisiania",  cls:"Battleship",  len:680,armor:"3\" Steel",   turrets:5, torps:6, aa:6,speed:29,hp:480,sym:"BB",nation:"cn",prof:"battleship"},
+    {name:"CFT Yeltsin",   cls:"Cruiser",     len:410,armor:"3\" Steel",   turrets:3, torps:2, aa:5,speed:32,hp:300,sym:"CL",nation:"ru",prof:"cruiser"},
+  ]
+};
+
+const NCOL={us:"#4a9eff",uk:"#88ddff",ru:"#ff4a4a",sa:"#e8a020",cn:"#dd2020",ph:"#4488ff",il:"#6699ff",br:"#22aa44",fr:"#4466cc"};const HULL={
+  us:["#18305a","#26508a","#18305a"],
+  uk:["#162850","#223e78","#162850"],
+  ru:["#501515","#7a2222","#501515"],
+  sa:["#4a3006","#78500e","#4a3006"],
+  cn:["#5a0808","#8a1010","#5a0808"],
+  ph:["#0a2a5a","#1a4a8a","#0a2a5a"],
+  il:["#1a2a4a","#2a4a7a","#1a2a4a"],
+  br:["#0a2a14","#145a28","#0a2a14"],
+  fr:["#0e1e44","#1a3470","#0e1e44"]
+};
+const DECK={us:"#1e3660",uk:"#1a2e58",ru:"#5e1e1e",sa:"#5c3a08",cn:"#6a1010",ph:"#1a3a6a",il:"#1e3060",br:"#0e3018",fr:"#162850"};
+const STRC={us:"#162e58",uk:"#141e48",ru:"#541414",sa:"#522e06",cn:"#481010",ph:"#0e2248",il:"#102040",br:"#0a2010",fr:"#0c1c40"};
+
+// ══════════════════════════════════════
+//  MAP ENVIRONMENTS
+// ══════════════════════════════════════
+const MAPS=[
+  {
+    id:'north_atlantic',name:'North Atlantic',location:'60°N · ATLANTIC OCEAN',
+    desc:'Cold night engagement. Moonlit swells, heavy chop.',
+    tag:'NIGHT',tagCls:'tag-night',
+    skyStops:[[0,'#010610'],[0.55,'#091a38'],[1,'#173460']],
+    oceanStops:[[0,'#0c2244'],[0.3,'#07162e'],[1,'#030918']],
+    horizonGlow:'rgba(18,55,135,0.52)',
+    waveCol:[55,130,210], waveSpeed:1.0, waveH:5, waveChop:1.7,
+    weather:'clear', celestial:'moon',
+    fogDensity:0, windSpd:1.0,
+    wakeCol:[110,170,240],
+    previewSky:['#010610','#091a38','#2a4a80'],
+    previewOcean:['#0c2244','#041228'],
+  },
+  {
+    id:'arctic',name:'Arctic Circle',location:'78°N · BARENTS SEA',
+    desc:'Blizzard. Icebergs drift through the fleet. Near-zero visibility.',
+    tag:'BLIZZARD',tagCls:'tag-storm',
+    skyStops:[[0,'#0a0f18'],[0.5,'#1a2a3a'],[1,'#2a3a4a']],
+    oceanStops:[[0,'#0a1e2e'],[0.3,'#071525'],[1,'#040e18']],
+    horizonGlow:'rgba(30,60,90,0.45)',
+    waveCol:[80,150,200], waveSpeed:1.4, waveH:7, waveChop:2.1,
+    weather:'blizzard', celestial:'none',
+    fogDensity:0.55, windSpd:2.2,
+    wakeCol:[140,200,230],
+    previewSky:['#0a0f18','#1a2a3a','#2a3a50'],
+    previewOcean:['#0a1e2e','#071525'],
+  },
+  {
+    id:'mediterranean',name:'Mediterranean',location:'36°N · STRAIT OF SICILY',
+    desc:'Golden dusk. Calm azure seas. Rocky coastline looms.',
+    tag:'DUSK',tagCls:'tag-dusk',
+    skyStops:[[0,'#1a0a00'],[0.25,'#7a3010'],[0.55,'#c86020'],[0.8,'#e89030'],[1,'#f0b060']],
+    oceanStops:[[0,'#1a5a7a'],[0.3,'#0f3a55'],[1,'#081e30']],
+    horizonGlow:'rgba(220,100,20,0.65)',
+    waveCol:[30,140,200], waveSpeed:0.6, waveH:3, waveChop:1.2,
+    weather:'clear', celestial:'sun',
+    fogDensity:0, windSpd:0.5,
+    wakeCol:[80,180,220],
+    previewSky:['#c86020','#e89030','#f0b060'],
+    previewOcean:['#1a5a7a','#0f3a55'],
+  },
+  {
+    id:'pacific',name:'Pacific Storm',location:'22°N · PHILIPPINE SEA',
+    desc:'Typhoon front. Massive swells. Lightning splits the sky.',
+    tag:'TYPHOON',tagCls:'tag-storm',
+    skyStops:[[0,'#050608'],[0.4,'#10181e'],[0.8,'#18222a'],[1,'#202a32']],
+    oceanStops:[[0,'#0a1a22'],[0.3,'#06101a'],[1,'#030a10']],
+    horizonGlow:'rgba(10,30,50,0.8)',
+    waveCol:[40,100,160], waveSpeed:1.8, waveH:10, waveChop:2.5,
+    weather:'storm', celestial:'lightning',
+    fogDensity:0.2, windSpd:3.0,
+    wakeCol:[80,140,180],
+    previewSky:['#050608','#10181e','#18222a'],
+    previewOcean:['#0a1a22','#06101a'],
+  },
+  {
+    id:'persian_gulf',name:'Persian Gulf',location:'26°N · STRAIT OF HORMUZ',
+    desc:'Scorching noon. Heat haze. Desert coastline stretches west.',
+    tag:'CLEAR',tagCls:'tag-clear',
+    skyStops:[[0,'#0a1a3a'],[0.3,'#1a4a7a'],[0.65,'#3a80c0'],[0.85,'#60aadc'],[1,'#88ccee']],
+    oceanStops:[[0,'#0a4a5a'],[0.3,'#074055'],[1,'#043040']],
+    horizonGlow:'rgba(80,160,210,0.55)',
+    waveCol:[20,160,200], waveSpeed:0.4, waveH:2, waveChop:0.9,
+    weather:'haze', celestial:'sun_high',
+    fogDensity:0.08, windSpd:0.3,
+    wakeCol:[50,200,230],
+    previewSky:['#3a80c0','#60aadc','#88ccee'],
+    previewOcean:['#0a4a5a','#074055'],
+  },
+];
+
+// ══════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════
+let canvas,ctx,mmCtx;
+let running=false,gTime=0,lastT=0;
+let mX=0,mY=0;
+let side="us";
+let pShips=[],eShips=[];
+let pIdx=0;
+let pSc=0,eSc=0;
+let canFire=true,rTime=0,rMax=900;
+let canTorp=true,tTime=0,tMax=5200;
+let shells=[],torps=[],exps=[],smoke=[],planes=[];
+let wOff=0;
+let vX=0,vY=0;
+let fMode="guns";
+let sided=false;
+const keys={};
+let currentMap=MAPS[0];
+let mapSelected=false;
+let ambientParticles=[];
+let icebergs=[];
+let lightningFlash=0,lightningTimer=0;
+
+// ══════════════════════════════════════
+//  SIDE SELECT
+// ══════════════════════════════════════
+function selectSide(s){
+  side=s; sided=true;
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('sel'));
+  document.querySelector(`.${s}-c`).classList.add('sel');
+  const b=document.getElementById('depBtn');
+  b.disabled=false;
+  b.textContent=s==='us'?'CHOOSE BATTLEGROUND ▶':'CHOOSE BATTLEGROUND ▶';
+  const pc=s==='us'?'#4a9eff':'#ff4a4a';
+  const ec=s==='us'?'#ff4a4a':'#4a9eff';
+  document.documentElement.style.setProperty('--pcol',pc);
+  document.documentElement.style.setProperty('--ecol',ec);
+}
+
+function goToMapSelect(){
+  if(!sided)return;
+  document.getElementById('sideScr').classList.add('hidden');
+  document.getElementById('mapScr').classList.remove('hidden');
+  buildMapGrid();
+}
+
+function buildMapGrid(){
+  const grid=document.getElementById('mapGrid');
+  grid.innerHTML='';
+  MAPS.forEach((m,i)=>{
+    const card=document.createElement('div');
+    card.className='map-card'+(currentMap.id===m.id?' sel':'');
+    // Draw preview canvas
+    const previewCanvas=document.createElement('canvas');
+    previewCanvas.className='map-preview';
+    previewCanvas.width=162; previewCanvas.height=78;
+    card.appendChild(previewCanvas);
+    drawMapPreview(previewCanvas,m);
+    const info=document.createElement('div');
+    info.className='map-info';
+    info.innerHTML=`<div class="map-name">${m.name}</div><div class="map-loc">${m.location}</div><div class="map-desc">${m.desc}</div><span class="map-tag ${m.tagCls}">${m.tag}</span>`;
+    card.appendChild(info);
+    card.onclick=()=>selectMap(m.id);
+    grid.appendChild(card);
+  });
+}
+
+function drawMapPreview(cvs,m){
+  const pc=cvs.getContext('2d');
+  const W=cvs.width,H=cvs.height;
+  // Sky
+  const skyG=pc.createLinearGradient(0,0,0,H*0.55);
+  const stops=m.skyStops||[[0,'#010610'],[1,'#173460']];
+  stops.forEach(s=>skyG.addColorStop(s[0],s[1]));
+  pc.fillStyle=skyG; pc.fillRect(0,0,W,H*0.55);
+  // Stars (night maps)
+  if(m.celestial==='moon'||m.celestial==='none'){
+    for(let i=0;i<30;i++){
+      pc.fillStyle=`rgba(255,255,255,${0.3+Math.random()*0.5})`;
+      pc.fillRect(Math.random()*W,Math.random()*H*0.5,1,1);
+    }
+  }
+  // Sun/moon
+  if(m.celestial==='sun'||m.celestial==='sun_high'){
+    const sy=m.celestial==='sun'?H*0.35:H*0.12;
+    const sg=pc.createRadialGradient(W*0.7,sy,0,W*0.7,sy,18);
+    sg.addColorStop(0,m.celestial==='sun'?'rgba(255,200,80,0.95)':'rgba(255,240,160,0.95)');
+    sg.addColorStop(1,'rgba(255,150,50,0)');
+    pc.fillStyle=sg; pc.beginPath(); pc.arc(W*0.7,sy,18,0,Math.PI*2); pc.fill();
+  }
+  if(m.celestial==='moon'){
+    pc.beginPath(); pc.arc(W*0.8,H*0.15,8,0,Math.PI*2);
+    const mg=pc.createRadialGradient(W*0.8,H*0.15,0,W*0.8,H*0.15,8);
+    mg.addColorStop(0,'rgba(255,248,215,0.9)'); mg.addColorStop(1,'rgba(200,185,135,0)');
+    pc.fillStyle=mg; pc.fill();
+  }
+  // Ocean
+  const oG=pc.createLinearGradient(0,H*0.55,0,H);
+  const ost=m.oceanStops||[[0,'#0c2244'],[1,'#030918']];
+  ost.forEach(s=>oG.addColorStop(s[0],s[1]));
+  pc.fillStyle=oG; pc.fillRect(0,H*0.55,W,H*0.45);
+  // Wave lines
+  const [wr,wg,wb]=m.waveCol;
+  for(let i=0;i<4;i++){
+    pc.strokeStyle=`rgba(${wr},${wg},${wb},${0.1+i*0.04})`; pc.lineWidth=0.7;
+    pc.beginPath();
+    for(let x=0;x<W;x+=2){
+      const y=H*0.56+i*12+Math.sin(x*0.05+i)*m.waveH*0.4;
+      x===0?pc.moveTo(x,y):pc.lineTo(x,y);
+    }
+    pc.stroke();
+  }
+  // Weather overlay
+  if(m.weather==='blizzard'){
+    pc.fillStyle='rgba(200,220,255,0.12)'; pc.fillRect(0,0,W,H);
+    for(let i=0;i<40;i++){
+      pc.fillStyle=`rgba(255,255,255,${0.3+Math.random()*0.4})`;
+      pc.beginPath(); pc.arc(Math.random()*W,Math.random()*H,Math.random()*1.5,0,Math.PI*2); pc.fill();
+    }
+  }
+  if(m.weather==='storm'){
+    pc.fillStyle='rgba(0,0,0,0.25)'; pc.fillRect(0,0,W,H);
+  }
+  if(m.celestial==='lightning'){
+    // Lightning bolt preview
+    pc.strokeStyle='rgba(180,180,255,0.6)'; pc.lineWidth=1;
+    pc.beginPath(); pc.moveTo(W*0.3,0); pc.lineTo(W*0.25,H*0.25); pc.lineTo(W*0.32,H*0.25); pc.lineTo(W*0.22,H*0.5); pc.stroke();
+  }
+  // Fog overlay
+  if(m.fogDensity>0.3){
+    pc.fillStyle=`rgba(180,200,220,${m.fogDensity*0.4})`; pc.fillRect(0,H*0.4,W,H*0.6);
+  }
+  // Map name overlay
+  pc.fillStyle='rgba(0,0,0,0.35)'; pc.fillRect(0,H*0.52,W,H*0.06);
+}
+
+function selectMap(id){
+  currentMap=MAPS.find(m=>m.id===id)||MAPS[0];
+  mapSelected=true;
+  document.querySelectorAll('.map-card').forEach(c=>c.classList.remove('sel'));
+  document.querySelectorAll('.map-card').forEach((c,i)=>{if(MAPS[i].id===id)c.classList.add('sel');});
+  const b=document.getElementById('mapBtn');
+  b.disabled=false;
+  b.textContent='DEPLOY TO '+currentMap.name.toUpperCase()+' ▶';
+}
+
+function confirmMap(){
+  if(!mapSelected)return;
+  document.getElementById('mapScr').classList.add('hidden');
+  startGame();
+}
+function showSideSelect(){
+  document.getElementById('winScr').classList.add('hidden');
+  document.getElementById('loseScr').classList.add('hidden');
+  document.getElementById('mapScr').classList.add('hidden');
+  document.getElementById('sideScr').classList.remove('hidden');
+  document.getElementById('ui').style.display='none';
+  mapSelected=false; sided=false;
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('sel'));
+  const db=document.getElementById('depBtn');
+  if(db){db.disabled=true;db.textContent='SELECT A SIDE FIRST';}
+  const mb=document.getElementById('mapBtn');
+  if(mb){mb.disabled=true;mb.textContent='SELECT A MAP FIRST';}
+}
+
+// ══════════════════════════════════════
+//  SHIPS
+// ══════════════════════════════════════
+function mkShip(d,faction,i,tot){
+  const s=faction===side?-1:1;
+  return{
+    ...d,faction,maxHP:d.hp,
+    x:s*(260+Math.random()*340),
+    y:(i-tot/2)*150+(Math.random()-.5)*65,
+    dead:false,onFire:false,fi:0,
+    fTimer:700+Math.random()*1400,
+    tTimer:2800+Math.random()*3800,
+    sTimer:0,
+    size:d.len/28,
+    wPh:Math.random()*Math.PI*2,
+    heading:0, vel:0,
+    planeTimer:8000+Math.random()*6000, maxPlanes:3, planesOut:0
+  };
+}
+function initShips(){
+  const pF=FLEETS[side];
+  const eF=FLEETS[side==='us'?'ru':'us'];
+  pShips=pF.map((d,i)=>mkShip(d,side,i,pF.length));
+  eShips=eF.map((d,i)=>mkShip(d,side==='us'?'ru':'us',i,eF.length));
+  pIdx=0;
+}
+
+// ══════════════════════════════════════
+//  CANVAS
+// ══════════════════════════════════════
+function setupCanvas(){
+  canvas=document.getElementById('gameCanvas');
+  canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+  ctx=canvas.getContext('2d');
+  mmCtx=document.getElementById('mmCanvas').getContext('2d');
+  document.getElementById('minimap').style.display='block';
+}
+
+// ══════════════════════════════════════
+//  LOOP
+// ══════════════════════════════════════
+let hudTimer=0;
+function loop(ts){
+  if(!running)return;
+  const dt=Math.min(ts-lastT,33); // cap at ~30fps equivalent delta
+  lastT=ts; gTime+=dt;
+  update(dt);
+  render();
+  hudTimer+=dt;
+  if(hudTimer>=100){ updateHUD(); hudTimer=0; } // HUD at ~10fps
+  requestAnimationFrame(loop);
+}
+
+// ══════════════════════════════════════
+//  INPUT
+// ══════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  keys[e.key.toLowerCase()]=true;
+  if(!running)return;
+  if(e.key==='t'||e.key==='T')fireTorp();
+  if(e.key==='f'||e.key==='F')fireAA();   // AA moved to F — A/D are now turn left/right
+  if(e.key==='p'||e.key==='P')launchPlane();
+  if(e.key==='e'||e.key==='E')toggleMode();
+  const n=parseInt(e.key);
+  if(n>=1&&n<=7)switchShip(n-1);
+});
+document.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+document.addEventListener('mousemove',e=>{mX=e.clientX;mY=e.clientY;});
+document.addEventListener('click',()=>{if(running)fireAction();});
+
+function toggleMode(){
+  fMode=fMode==='guns'?'torp':'guns';
+  const el=document.getElementById('fm');
+  el.textContent=fMode==='torp'?'🚀 TORPEDO MODE':'🔫 GUN MODE';
+  el.style.opacity=1;
+  setTimeout(()=>el.style.opacity=0,1600);
+}
+function fireAction(){fMode==='torp'?fireTorp():fireGun();}
+
+// ══════════════════════════════════════
+//  UPDATE
+// ══════════════════════════════════════
+function update(dt){
+  wOff+=dt*0.0008;
+  updReload(dt);
+  const pl=pShips[pIdx];
+  if(pl&&!pl.dead){
+    movePl(pl,dt);
+    // Camera follows player ship — vX/vY are world offsets relative to ship
+    vX += (0 - vX) * 0.06;
+    vY += (0 - vY) * 0.06;
+  } else {
+    const nx=pShips.findIndex(s=>!s.dead);
+    if(nx>=0){pIdx=nx;buildSel();}
+  }
+  eShips.forEach(s=>{if(!s.dead)ai(s,dt,pShips);});
+  pShips.forEach((s,i)=>{if(!s.dead&&i!==pIdx)ai(s,dt,eShips);});
+
+  shells=shells.filter(sh=>{
+    sh.x+=sh.vx*dt*0.054;sh.y+=sh.vy*dt*0.054;sh.life-=dt;
+    if(sh.life<=0)return false;
+    const tgts=sh.faction===side?eShips:pShips;
+    for(let t of tgts){
+      if(!t.dead&&dst(sh,t)<t.size*11){
+        const d=dmg(sh.pw,t.armor,sh.faction);
+        t.hp-=d;
+        if(t.hp<t.maxHP*0.42)t.onFire=true;
+        t.fi=Math.min(1,t.fi+0.14);
+        spawnExp(t.x+(Math.random()-.5)*t.size*4,t.y+(Math.random()-.5)*t.size*2,22+Math.random()*18);
+        if(sh.faction!==side)flash(false);
+        if(t.hp<=0)kill(t,sh.faction);
+        return false;
+      }
+    }
+    return true;
+  });
+
+  torps=torps.filter(t=>{
+    t.x+=t.vx*dt*0.037;t.y+=t.vy*dt*0.037;t.life-=dt;
+    if(t.life<=0)return false;
+    const tgts=t.faction===side?eShips:pShips;
+    for(let s of tgts){
+      if(!s.dead&&dst(t,s)<s.size*13){
+        s.hp-=142; s.onFire=true; s.fi=Math.min(1,s.fi+0.38);
+        spawnExp(s.x,s.y,65); spawnExp(s.x+(Math.random()-.5)*25,s.y+(Math.random()-.5)*15,40);
+        if(t.faction!==side)flash(true);
+        if(s.hp<=0)kill(s,t.faction);
+        return false;
+      }
+    }
+    return true;
+  });
+
+  // ── PLANES ──
+  planes=planes.filter(plane=>{
+    plane.life-=dt;
+    if(plane.life<=0){
+      plane.carrier.planesOut=Math.max(0,plane.carrier.planesOut-1);
+      return false;
+    }
+
+    // Steer toward nearest enemy (homing)
+    const enemies=plane.faction===side?eShips.filter(r=>!r.dead):pShips.filter(r=>!r.dead);
+    const tgt=enemies.length?nearest(plane,enemies):null;
+    const spd=Math.sqrt(plane.vx*plane.vx+plane.vy*plane.vy)||3.2;
+
+    if(tgt){
+      const tdx=tgt.x-plane.x, tdy=tgt.y-plane.y;
+      const td=Math.sqrt(tdx*tdx+tdy*tdy)||1;
+      const turnStr=0.06;
+      plane.vx+=(tdx/td)*spd*turnStr;
+      plane.vy+=(tdy/td)*spd*turnStr;
+      // Normalise speed
+      const ns=Math.sqrt(plane.vx*plane.vx+plane.vy*plane.vy)||1;
+      plane.vx=plane.vx/ns*spd;
+      plane.vy=plane.vy/ns*spd;
+      plane.ang=Math.atan2(plane.vy,plane.vx);
+
+      // Hit check
+      if(dst(plane,tgt)<tgt.size*10){
+        const d2=dmg(3.5,'2" Steel',plane.faction); // planes deal moderate damage
+        tgt.hp-=d2;
+        if(tgt.hp<tgt.maxHP*0.42)tgt.onFire=true;
+        tgt.fi=Math.min(1,tgt.fi+0.2);
+        spawnExp(tgt.x,tgt.y,35);
+        spawnExp(plane.x,plane.y,20);
+        if(plane.faction!==side)flash(false);
+        if(tgt.hp<=0)kill(tgt,plane.faction);
+        plane.carrier.planesOut=Math.max(0,plane.carrier.planesOut-1);
+        return false;
+      }
+    }
+
+    plane.x+=plane.vx*dt*0.042;
+    plane.y+=plane.vy*dt*0.042;
+
+    // Store trail
+    plane.trail.push({x:plane.x,y:plane.y});
+    if(plane.trail.length>12)plane.trail.shift();
+
+    return true;
+  });
+
+  // AI carrier auto-launch
+  const allCarriers=[...pShips,...eShips].filter(s=>!s.dead&&s.cls==='Carrier');
+  allCarriers.forEach(carrier=>{
+    // Only AI carriers auto-launch (player carrier launched by P key)
+    const isPlayerCarrier=pShips.includes(carrier)&&carrier===pShips[pIdx];
+    if(isPlayerCarrier)return;
+    carrier.planeTimer-=dt;
+    if(carrier.planeTimer<=0&&carrier.planesOut<carrier.maxPlanes){
+      carrier.planeTimer=7000+Math.random()*5000;
+      const enemies=(carrier.faction===side?eShips:pShips).filter(r=>!r.dead);
+      if(!enemies.length)return;
+      const tgt=nearest(carrier,enemies);
+      const dx=tgt.x-carrier.x, dy=tgt.y-carrier.y;
+      const d=Math.sqrt(dx*dx+dy*dy)||1;
+      spawnPlane(carrier,dx/d,dy/d);
+    }
+  });
+
+  exps=exps.filter(e=>{e.life-=dt;return e.life>0;});
+  smoke=smoke.filter(p=>{
+    p.x+=p.vx*dt*0.01;p.y+=p.vy*dt*0.01;
+    p.life-=dt;p.r+=dt*0.007;
+    return p.life>0;
+  });
+
+  [...pShips,...eShips].forEach(s=>{
+    if(!s.dead&&s.onFire){
+      s.sTimer-=dt;
+      if(s.sTimer<=0){
+        s.sTimer=110+Math.random()*75;
+        mkSmoke(s.x+(Math.random()-.5)*s.size*4,s.y+(Math.random()-.5)*s.size*2);
+      }
+    }
+  });
+
+  torpWarn();checkWin();
+
+  // Ambient particles (snow/rain)
+  const W2=canvas.width,H2=canvas.height;
+  if(currentMap.weather==='blizzard'||currentMap.weather==='storm'){
+    ambientParticles.forEach(p=>{
+      p.x+=p.vx+(currentMap.weather==='blizzard'?Math.sin(wOff+p.y*0.01)*0.3:0);
+      p.y+=p.vy;
+      if(p.y>H2){p.y=-5;p.x=Math.random()*W2;}
+      if(p.x>W2)p.x=0; if(p.x<0)p.x=W2;
+    });
+  }
+  // Icebergs drift slowly
+  icebergs.forEach(icb=>{
+    icb.x+=icb.vx*dt*0.01;
+    icb.x=Math.max(-700,Math.min(700,icb.x));
+  });
+}
+
+function dmg(pw,armor,atkFaction){
+  const av=parseFloat(armor)||3;
+  const ti=armor&&armor.includes('Titanium');
+  // Titanium reduced from 1.65x to 1.15x — still tough but beatable
+  const armorMult=ti?1.15:1.0;
+  // Player-side crew bonus: slightly better accuracy/power
+  const crew=(atkFaction===side)?1.28:1.0;
+  return Math.max(6,(pw*19*crew)/(av*armorMult)+Math.random()*10);
+}
+function movePl(ship,dt){
+  const turnRate = 0.0022 + ship.speed*0.00003;  // snappier turning
+  const accel    = ship.speed * 0.0006;           // faster acceleration
+  const maxVel   = ship.speed * 0.55;             // higher top speed
+  const drag     = 0.972;                          // quicker stop
+
+  if(keys['a']||keys['arrowleft'])  ship.heading -= turnRate*dt;
+  if(keys['d']||keys['arrowright']) ship.heading += turnRate*dt;
+  if(keys['w']||keys['arrowup'])    ship.vel = Math.min(ship.vel + accel*dt, maxVel);
+  if(keys['s']||keys['arrowdown'])  ship.vel = Math.max(ship.vel - accel*dt*0.7, -maxVel*0.4);
+
+  ship.vel *= drag;
+  if(Math.abs(ship.vel) < 0.015) ship.vel = 0;
+
+  ship.x += Math.cos(ship.heading) * ship.vel * dt * 0.1;
+  ship.y += Math.sin(ship.heading) * ship.vel * dt * 0.1;
+  ship.x = Math.max(-620,Math.min(620,ship.x));
+  ship.y = Math.max(-420,Math.min(420,ship.y));
+}
+function ai(ship,dt,enemies){
+  const alive=enemies.filter(e=>!e.dead);
+  if(!alive.length)return;
+
+  // Non-combat ships flee
+  if(ship.cls==='Cargo'||ship.cls==='Medical'){
+    const nr=nearest(ship,alive);
+    if(nr){
+      const dx=ship.x-nr.x,dy=ship.y-nr.y,dd=Math.sqrt(dx*dx+dy*dy)||1;
+      const sp=ship.speed*0.18;
+      ship.x+=dx/dd*sp*dt*0.01; ship.y+=dy/dd*sp*dt*0.01;
+      ship.x=Math.max(-620,Math.min(620,ship.x));
+      ship.y=Math.max(-420,Math.min(420,ship.y));
+    }
+    return;
+  }
+
+  // Allied AI targets weakest enemy; enemy AI targets nearest
+  let target;
+  if(ship.faction===side){
+    target=alive.reduce((b,e)=>(e.hp/e.maxHP < b.hp/b.maxHP)?e:b);
+    const close=alive.find(e=>dst(ship,e)<95);
+    if(close)target=close;
+  } else {
+    target=nearest(ship,alive);
+  }
+
+  const dx=target.x-ship.x,dy=target.y-ship.y,d=Math.sqrt(dx*dx+dy*dy)||1;
+  const sp=ship.speed*0.13;
+  const sMult=(ship.faction===side)?1.0:0.80;
+  const comf=80+ship.size*3.5;
+
+  // Steer heading toward/away from target smoothly
+  const desiredAngle = Math.atan2(dy,dx);
+  let angleDiff = desiredAngle - (ship.heading||0);
+  while(angleDiff> Math.PI) angleDiff-=Math.PI*2;
+  while(angleDiff<-Math.PI) angleDiff+=Math.PI*2;
+  if(d>comf+25){
+    ship.heading = (ship.heading||0) + angleDiff*0.04;
+    ship.x+=dx/d*sp*sMult*dt*0.01;ship.y+=dy/d*sp*sMult*dt*0.01;
+  } else if(d<comf-18){
+    ship.heading = (ship.heading||0) + (angleDiff+Math.PI)*0.04;
+    ship.x-=dx/d*sp*0.4*dt*0.01;ship.y-=dy/d*sp*0.4*dt*0.01;
+  } else {
+    ship.heading = (ship.heading||0) + angleDiff*0.02;
+  }
+
+  // Spread: avoid clustering with allies
+  const allies=(ship.faction===side)?pShips:eShips;
+  allies.forEach(a=>{
+    if(a===ship||a.dead)return;
+    const ax=ship.x-a.x,ay=ship.y-a.y,ad=Math.sqrt(ax*ax+ay*ay)||1;
+    if(ad<55){ship.x+=ax/ad*1.3;ship.y+=ay/ad*1.3;}
+  });
+  ship.x+=Math.sin(wOff*1.2+ship.y*0.018)*0.1;
+  ship.x=Math.max(-620,Math.min(620,ship.x));
+  ship.y=Math.max(-420,Math.min(420,ship.y));
+
+  if(ship.turrets>0){
+    ship.fTimer-=dt;
+    // Allied AI fires faster; enemy fires slower and less accurately
+    const fRate=(ship.faction===side)?(850+Math.random()*650):(1500+Math.random()*1300);
+    if(ship.fTimer<=0&&d<385){
+      ship.fTimer=fRate;
+      const acc=(ship.faction===side)?0.048:0.095;
+      spawnShell(ship.x,ship.y,dx/d+(Math.random()-.5)*acc,dy/d+(Math.random()-.5)*acc,ship.faction,ship.turrets/4);
+      // Allied heavy ships fire double salvo
+      if(ship.faction===side&&ship.turrets>=6){
+        setTimeout(()=>{if(!ship.dead)spawnShell(ship.x,ship.y,dx/d+(Math.random()-.5)*acc,dy/d+(Math.random()-.5)*acc,ship.faction,ship.turrets/4);},180);
+      }
+    }
+  }
+  if(ship.torps>0){
+    ship.tTimer-=dt;
+    const tRate=(ship.faction===side)?(2600+Math.random()*2000):(4800+Math.random()*3500);
+    if(ship.tTimer<=0&&d<265){
+      ship.tTimer=tRate;
+      spawnTorp(ship.x,ship.y,dx/d,dy/d,ship.faction);
+    }
+  }
+}
+
+function nearest(s,others){let b=null,bd=Infinity;for(let o of others){const d=dst(s,o);if(d<bd){bd=d;b=o;}}return b;}
+function dst(a,b){return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2);}
+function spawnShell(x,y,dx,dy,faction,pw){shells.push({x,y,vx:dx*5.4,vy:dy*5.4,faction,pw:pw||1,life:3100});}
+function spawnTorp(x,y,dx,dy,faction){torps.push({x,y,vx:dx*3.6,vy:dy*3.6,faction,life:5400});}
+function spawnPlane(carrier,dx,dy){
+  const spd=3.2+Math.random()*1.2;
+  planes.push({
+    x:carrier.x, y:carrier.y,
+    vx:dx*spd, vy:dy*spd,
+    faction:carrier.faction,
+    hp:1, life:14000,
+    carrier:carrier,
+    phase:'attack', // 'attack' | 'return'
+    trail:[],
+    nation:carrier.nation,
+    ang:Math.atan2(dy,dx)
+  });
+  carrier.planesOut++;
+}
+function spawnExp(x,y,r){exps.push({x,y,r,life:680,maxL:680});}
+function mkSmoke(x,y){smoke.push({x,y,r:5+Math.random()*4,vx:(Math.random()-.5)*0.3,vy:-0.55-Math.random()*0.38,life:2100+Math.random()*700,maxL:2800});}
+
+function kill(ship,byFac){
+  ship.dead=true;ship.hp=0;
+  spawnExp(ship.x,ship.y,ship.size*22);
+  spawnExp(ship.x+(Math.random()-.5)*45,ship.y+(Math.random()-.5)*28,ship.size*13);
+  for(let i=0;i<5;i++)mkSmoke(ship.x+(Math.random()-.5)*ship.size*5,ship.y+(Math.random()-.5)*ship.size*2);
+  if(byFac===side)pSc++;else eSc++;
+  addKill(ship,byFac);buildSel();
+}
+function addKill(ship,byFac){
+  const f=document.getElementById('kf');
+  const el=document.createElement('div');
+  el.className='ke '+(byFac===side?'p':'e');
+  el.textContent=(byFac===side?'ALLIED':'ENEMY')+' SANK '+ship.name+' ('+ship.cls+')';
+  f.insertBefore(el,f.firstChild);
+  while(f.children.length>5)f.removeChild(f.lastChild);
+  setTimeout(()=>{if(el.parentNode)el.parentNode.removeChild(el);},7000);
+}
+
+// ══════════════════════════════════════
+//  ACTIONS
+// ══════════════════════════════════════
+function updReload(dt){
+  if(!canFire){rTime-=dt;document.getElementById('rFill').style.width=Math.max(0,(1-rTime/rMax)*100)+'%';if(rTime<=0){canFire=true;document.getElementById('rFill').style.width='100%';}}
+  if(!canTorp){tTime-=dt;document.getElementById('tFill').style.width=Math.max(0,(1-tTime/tMax)*100)+'%';if(tTime<=0){canTorp=true;document.getElementById('tFill').style.width='100%';}}
+}
+function fireGun(){
+  const ship=pShips[pIdx];
+  if(!ship||ship.dead||!canFire||ship.turrets===0)return;
+  canFire=false;rTime=rMax;
+  const t=nearest(ship,eShips.filter(r=>!r.dead));
+  if(!t)return;
+  const dx=t.x-ship.x,dy=t.y-ship.y,d=Math.sqrt(dx*dx+dy*dy);
+  const v=Math.min(3,ship.turrets);
+  for(let i=0;i<v;i++){
+    const sp=0.04+i*0.014;
+    setTimeout(()=>spawnShell(ship.x,ship.y,dx/d+(Math.random()-.5)*sp,dy/d+(Math.random()-.5)*sp,side,ship.turrets/4),i*85);
+  }
+}
+function fireTorp(){
+  const ship=pShips[pIdx];
+  if(!ship||ship.dead||!canTorp||ship.torps===0)return;
+  canTorp=false;tTime=tMax;
+  const t=nearest(ship,eShips.filter(r=>!r.dead));
+  if(!t)return;
+  const dx=t.x-ship.x,dy=t.y-ship.y,d=Math.sqrt(dx*dx+dy*dy);
+  spawnTorp(ship.x,ship.y,dx/d,dy/d,side);
+  if(ship.torps>=6)setTimeout(()=>spawnTorp(ship.x,ship.y,dx/d+0.12,dy/d,side),140);
+}
+function fireAA(){
+  const ship=pShips[pIdx];
+  if(!ship||ship.dead||ship.aa===0)return;
+  for(let i=0;i<3;i++)spawnExp(ship.x+(Math.random()-.5)*75,ship.y+(Math.random()-.5)*55,14);
+}
+function launchPlane(){
+  const ship=pShips[pIdx];
+  if(!ship||ship.dead||ship.cls!=='Carrier')return;
+  if(ship.planesOut>=ship.maxPlanes){
+    const fm=document.getElementById('fm');
+    fm.textContent='✈ MAX AIRCRAFT IN FLIGHT';fm.style.opacity=1;
+    setTimeout(()=>fm.style.opacity=0,1600);
+    return;
+  }
+  const targets=eShips.filter(r=>!r.dead);
+  const tgt=targets.length?nearest(ship,targets):null;
+  const dx=tgt?tgt.x-ship.x:Math.cos(ship.heading);
+  const dy=tgt?tgt.y-ship.y:Math.sin(ship.heading);
+  const d=Math.sqrt(dx*dx+dy*dy)||1;
+  spawnPlane(ship,dx/d,dy/d);
+  const fm=document.getElementById('fm');
+  fm.textContent='✈ AIRCRAFT LAUNCHED';fm.style.opacity=1;
+  setTimeout(()=>fm.style.opacity=0,1400);
+}
+function switchShip(idx){const s=pShips[idx];if(!s||s.dead)return;pIdx=idx;buildSel();}
+function flash(big){
+  const el=document.getElementById('dmg');
+  el.style.background=big?'rgba(255,0,0,0.44)':'rgba(255,0,0,0.21)';
+  setTimeout(()=>el.style.background='rgba(255,0,0,0)',165);
+}
+function torpWarn(){
+  const pl=pShips[pIdx];if(!pl||pl.dead)return;
+  const inc=torps.find(t=>t.faction!==side&&dst(t,pl)<165);
+  document.getElementById('tw').style.display=inc?'block':'none';
+}
+function checkWin(){
+  const pd=pShips.every(s=>s.dead),ed=eShips.every(s=>s.dead);
+  if(!pd&&!ed)return;
+  running=false;
+  document.getElementById('ui').style.display='none';
+  const win=ed;
+  if(win) showWinScreen(); else showLoseScreen();
+}
+
+function showWinScreen(){
+  document.getElementById('winScr').classList.remove('hidden');
+  const pFaction = side==='us' ? 'ALLIED FORCES VICTORIOUS' : 'EASTERN COALITION VICTORIOUS';
+  document.getElementById('winFaction').textContent = pFaction;
+  document.getElementById('winMapName').textContent = '⚓ ' + currentMap.location;
+
+  const surviving = pShips.filter(s=>!s.dead).length;
+  const losses = pShips.filter(s=>s.dead).length;
+  const elapsed = fmt(gTime);
+  document.getElementById('winStats').innerHTML =
+    `<div class="stat-block"><div class="stat-num">${eSc}</div><div class="stat-lbl">ENEMY SHIPS SUNK</div></div>` +
+    `<div class="stat-block"><div class="stat-num">${surviving}</div><div class="stat-lbl">SHIPS SURVIVING</div></div>` +
+    `<div class="stat-block"><div class="stat-num">${elapsed}</div><div class="stat-lbl">BATTLE DURATION</div></div>` +
+    `<div class="stat-block"><div class="stat-num">${losses}</div><div class="stat-lbl">ALLIED LOSSES</div></div>`;
+
+  const medals = [];
+  if(losses === 0)                                                  medals.push({icon:'🛡️', lbl:'IRON HULL'});
+  if(eSc === eShips.length)                                         medals.push({icon:'⚓', lbl:'TOTAL ANNIHILATION'});
+  if(gTime < 120000)                                                medals.push({icon:'⚡', lbl:'BLITZKRIEG'});
+  if(pShips.find(s=>!s.dead&&(s.cls==='Medical'||s.cls==='Cargo'))) medals.push({icon:'🏳️', lbl:'PROTECTED FLEET'});
+  if(pShips.find(s=>!s.dead&&s.torps>8))                           medals.push({icon:'🚀', lbl:'TORPEDO ACE'});
+  if(medals.length === 0) medals.push({icon:'🎖️', lbl:'CAMPAIGN MEDAL'});
+  document.getElementById('winMedals').innerHTML =
+    medals.map(m=>`<div class="medal"><span class="medal-icon">${m.icon}</span>${m.lbl}</div>`).join('');
+
+  const quotes = [
+    'The enemy fleet burns on the horizon. The sea is yours.',
+    'Command reports all hostile contacts eliminated. Well done, Admiral.',
+    'History will remember this engagement. Your crews fought brilliantly.',
+    'Signal intercepted — enemy command has gone silent. Superb work.',
+    'The straits are clear. Your flag flies over these waters tonight.',
+    'Admiral, the ocean belongs to us. A stunning victory.',
+  ];
+  document.getElementById('winFlavour').textContent =
+    quotes[Math.floor(Math.random()*quotes.length)];
+
+  animateWinVfx();
+}
+
+function showLoseScreen(){
+  document.getElementById('loseScr').classList.remove('hidden');
+  const eFaction = side==='us' ? 'DESTROYED BY EASTERN COALITION' : 'DESTROYED BY ALLIED FORCES';
+  document.getElementById('loseFaction').textContent = eFaction;
+  document.getElementById('loseMapName').textContent = '💀 ' + currentMap.location;
+
+  const sunk = pSc;
+  const eRemaining = eShips.filter(s=>!s.dead).length;
+  const elapsed = fmt(gTime);
+  document.getElementById('loseStats').innerHTML =
+    `<div class="stat-block"><div class="stat-num">${sunk}</div><div class="stat-lbl">ENEMY SHIPS SUNK</div></div>` +
+    `<div class="stat-block"><div class="stat-num">${eRemaining}</div><div class="stat-lbl">ENEMIES REMAINING</div></div>` +
+    `<div class="stat-block"><div class="stat-num">${elapsed}</div><div class="stat-lbl">TIME SURVIVED</div></div>` +
+    `<div class="stat-block"><div class="stat-num">${pShips.length}</div><div class="stat-lbl">SHIPS LOST</div></div>`;
+
+  const medals = [];
+  if(sunk >= 5)        medals.push({icon:'⚔️', lbl:'FOUGHT VALIANTLY'});
+  if(sunk >= 3)        medals.push({icon:'💥', lbl:'COSTLY ENGAGEMENT'});
+  if(gTime > 180000)   medals.push({icon:'🕐', lbl:'FOUGHT TO THE END'});
+  if(sunk === 0)       medals.push({icon:'💧', lbl:'OUTGUNNED'});
+  if(medals.length === 0) medals.push({icon:'🪦', lbl:'IN MEMORIAM'});
+  document.getElementById('loseMedals').innerHTML =
+    medals.map(m=>`<div class="medal"><span class="medal-icon">${m.icon}</span>${m.lbl}</div>`).join('');
+
+  const quotes = [
+    'Your fleet lies at the bottom of the ocean. The enemy controls these waters.',
+    'No response from your ships. All contacts lost. Mission failed.',
+    "The Admiral's flag has been struck. These waters belong to the enemy.",
+    'Enemy command reports a decisive victory. Your forces are routed.',
+    'The sea has claimed your fleet. History will record this defeat.',
+    'All hands lost. The battle is over. Regroup and try again, Admiral.',
+  ];
+  document.getElementById('loseFlavour').textContent =
+    quotes[Math.floor(Math.random()*quotes.length)];
+
+  animateLoseVfx();
+}
+
+function animateWinVfx(){
+  const cvs = document.getElementById('winVfxCanvas');
+  if(!cvs) return;
+  cvs.width = window.innerWidth; cvs.height = window.innerHeight;
+  const pc = cvs.getContext('2d');
+  const W = cvs.width, H = cvs.height;
+
+  // Golden confetti + rising sparks
+  const particles = [];
+  const shapes = ['rect','circle','diamond'];
+  for(let i=0;i<180;i++){
+    particles.push({
+      x: Math.random()*W,
+      y: H + Math.random()*H,
+      vx: (Math.random()-.5)*2.5,
+      vy: -(3 + Math.random()*5),
+      r: 3+Math.random()*5,
+      life: 0.6+Math.random()*0.4,
+      decay: 0.003+Math.random()*0.004,
+      spin: Math.random()*Math.PI*2,
+      spinV: (Math.random()-.5)*0.12,
+      col: `hsl(${38+Math.random()*25},100%,${55+Math.random()*25}%)`,
+      shape: shapes[Math.floor(Math.random()*3)]
+    });
+  }
+  // Background star twinkles
+  const stars = [];
+  for(let i=0;i<80;i++){
+    stars.push({
+      x:Math.random()*W, y:Math.random()*H*0.7,
+      r:0.5+Math.random()*1.5,
+      phase:Math.random()*Math.PI*2,
+      speed:0.02+Math.random()*0.04
+    });
+  }
+
+  const scr = document.getElementById('winScr');
+  function step(){
+    if(scr.classList.contains('hidden')) return;
+    pc.clearRect(0,0,W,H);
+
+    // Twinkling stars
+    stars.forEach(s=>{
+      s.phase += s.speed;
+      const a = 0.3+Math.sin(s.phase)*0.3;
+      pc.fillStyle = `rgba(255,240,150,${a})`;
+      pc.beginPath(); pc.arc(s.x,s.y,s.r,0,Math.PI*2); pc.fill();
+    });
+
+    // Confetti
+    particles.forEach(p=>{
+      p.x += p.vx; p.y += p.vy;
+      p.vy += 0.06; // gravity
+      p.life -= p.decay;
+      p.spin += p.spinV;
+      if(p.y < -20){ p.y=H+10; p.life=0.8; p.vy=-(3+Math.random()*5); }
+      if(p.life <= 0) return;
+      const col = p.col.replace('hsl','hsla').replace(')',`,${p.life})`);
+      pc.save(); pc.translate(p.x,p.y); pc.rotate(p.spin);
+      pc.fillStyle = col;
+      if(p.shape==='rect'){
+        pc.fillRect(-p.r,-p.r*0.5,p.r*2,p.r);
+      } else if(p.shape==='circle'){
+        pc.beginPath(); pc.arc(0,0,p.r*0.7,0,Math.PI*2); pc.fill();
+      } else {
+        pc.beginPath(); pc.moveTo(0,-p.r); pc.lineTo(p.r,0); pc.lineTo(0,p.r); pc.lineTo(-p.r,0); pc.closePath(); pc.fill();
+      }
+      pc.restore();
+    });
+
+    // Radial golden glow from center bottom
+    const grd = pc.createRadialGradient(W/2,H,0,W/2,H,H*0.8);
+    grd.addColorStop(0,'rgba(255,200,0,0.06)');
+    grd.addColorStop(1,'rgba(0,0,0,0)');
+    pc.fillStyle = grd; pc.fillRect(0,0,W,H);
+
+    requestAnimationFrame(step);
+  }
+  step();
+}
+
+function animateLoseVfx(){
+  const cvs = document.getElementById('loseVfxCanvas');
+  if(!cvs) return;
+  cvs.width = window.innerWidth; cvs.height = window.innerHeight;
+  const pc = cvs.getContext('2d');
+  const W = cvs.width, H = cvs.height;
+
+  // Falling embers + rising smoke wisps
+  const embers = [];
+  for(let i=0;i<120;i++){
+    embers.push({
+      x: Math.random()*W,
+      y: Math.random()*H,
+      vx: (Math.random()-.5)*0.8,
+      vy: 0.4+Math.random()*1.8,
+      r: 0.8+Math.random()*2.5,
+      pulse: Math.random()*Math.PI*2,
+      pulseV: 0.03+Math.random()*0.04,
+      bright: 80+Math.random()*80
+    });
+  }
+  // Smoke wisps
+  const wisps = [];
+  for(let i=0;i<20;i++){
+    wisps.push({
+      x: Math.random()*W, y: H+Math.random()*100,
+      vx:(Math.random()-.5)*0.4, vy:-(0.3+Math.random()*0.7),
+      r:15+Math.random()*30, life:0.4+Math.random()*0.4,
+      decay:0.0008+Math.random()*0.001
+    });
+  }
+
+  const scr = document.getElementById('loseScr');
+  let t=0;
+  function step(){
+    if(scr.classList.contains('hidden')) return;
+    t++;
+    pc.clearRect(0,0,W,H);
+
+    // Smoke wisps rising
+    wisps.forEach(w=>{
+      w.x+=w.vx; w.y+=w.vy; w.r+=0.15; w.life-=w.decay;
+      if(w.y < -w.r){ w.y=H+50; w.r=15+Math.random()*30; w.life=0.4+Math.random()*0.4; w.x=Math.random()*W; }
+      const sg = pc.createRadialGradient(w.x,w.y,0,w.x,w.y,w.r);
+      sg.addColorStop(0,`rgba(60,30,20,${w.life*0.25})`);
+      sg.addColorStop(1,'rgba(0,0,0,0)');
+      pc.fillStyle=sg; pc.beginPath(); pc.arc(w.x,w.y,w.r,0,Math.PI*2); pc.fill();
+    });
+
+    // Falling embers
+    embers.forEach(e=>{
+      e.x+=e.vx; e.y+=e.vy; e.pulse+=e.pulseV;
+      if(e.y > H+10){ e.y=-5; e.x=Math.random()*W; }
+      const glow = 0.35+Math.sin(e.pulse)*0.3;
+      // Glow aura
+      const eg = pc.createRadialGradient(e.x,e.y,0,e.x,e.y,e.r*3);
+      eg.addColorStop(0,`rgba(255,${Math.floor(e.bright)},0,${glow*0.4})`);
+      eg.addColorStop(1,'rgba(0,0,0,0)');
+      pc.fillStyle=eg; pc.beginPath(); pc.arc(e.x,e.y,e.r*3,0,Math.PI*2); pc.fill();
+      // Core dot
+      pc.fillStyle=`rgba(255,${Math.floor(e.bright+50)},30,${glow})`;
+      pc.beginPath(); pc.arc(e.x,e.y,e.r,0,Math.PI*2); pc.fill();
+    });
+
+    // Pulsing dark-red vignette
+    const pulse = 0.10+Math.sin(t*0.025)*0.05;
+    const vg = pc.createRadialGradient(W/2,H/2,H*0.05,W/2,H/2,H*0.95);
+    vg.addColorStop(0,'rgba(0,0,0,0)');
+    vg.addColorStop(0.6,'rgba(0,0,0,0)');
+    vg.addColorStop(1,`rgba(180,0,0,${pulse})`);
+    pc.fillStyle=vg; pc.fillRect(0,0,W,H);
+
+    requestAnimationFrame(step);
+  }
+  step();
+}
+
+function replayGame(){
+  document.getElementById('winScr').classList.add('hidden');
+  document.getElementById('loseScr').classList.add('hidden');
+  document.getElementById('kf').innerHTML='';
+  // Go straight back to map select with same side
+  document.getElementById('mapScr').classList.remove('hidden');
+  mapSelected=false;
+  const mb=document.getElementById('mapBtn');
+  if(mb){mb.disabled=true;mb.textContent='SELECT A MAP FIRST';}
+  document.querySelectorAll('.map-card').forEach(c=>c.classList.remove('sel'));
+  buildMapGrid();
+}
+
+// ══════════════════════════════════════
+//  RENDER  (performance-optimised)
+// ══════════════════════════════════════
+
+// Pre-baked star positions (deterministic, never Math.random() per frame)
+const STARS = Array.from({length:100},(_,i)=>({
+  x: (i*173)%1000, y: (i*83)%480,
+  size: i%3===0?1.5:1,
+  bright: 0.25+((i*37)%100)/100*0.65
+}));
+// Pre-baked glimmer offsets
+const GLIMMER = Array.from({length:16},(_,i)=>({i, base:i*21, span:7+i}));
+
+// Cached gradient objects (rebuilt only on resize)
+let cachedW=0, cachedH=0;
+let cachedSkyG=null, cachedOceanG=null, cachedHorizonG=null, cachedDesertG=null;
+let cachedMapId='';
+function invalidateGradients(){ cachedW=0; }
+
+function ensureGradients(W,H,M){
+  if(cachedW===W && cachedH===H && cachedMapId===M.id) return;
+  cachedW=W; cachedH=H; cachedMapId=M.id;
+
+  cachedSkyG = ctx.createLinearGradient(0,0,0,H*0.62);
+  M.skyStops.forEach(s=>cachedSkyG.addColorStop(s[0],s[1]));
+
+  cachedOceanG = ctx.createLinearGradient(0,H*0.58,0,H);
+  M.oceanStops.forEach(s=>cachedOceanG.addColorStop(s[0],s[1]));
+
+  cachedHorizonG = ctx.createLinearGradient(0,H*0.52,0,H*0.67);
+  cachedHorizonG.addColorStop(0,M.horizonGlow);
+  cachedHorizonG.addColorStop(1,'rgba(0,0,0,0)');
+
+  if(M.id==='persian_gulf'){
+    const dBase=H*0.615;
+    cachedDesertG = ctx.createLinearGradient(0,dBase-H*0.06,0,dBase);
+    cachedDesertG.addColorStop(0,'#c89050');
+    cachedDesertG.addColorStop(1,'#a06830');
+  }
+}
+
+// Offscreen canvas for smoke (composited cheaply)
+let smokeCanvas=null, smokeCtx=null;
+function ensureSmokeCanvas(W,H){
+  if(smokeCanvas&&smokeCanvas.width===W&&smokeCanvas.height===H) return;
+  smokeCanvas=document.createElement('canvas');
+  smokeCanvas.width=W; smokeCanvas.height=H;
+  smokeCtx=smokeCanvas.getContext('2d');
+}
+
+function render(){
+  const W=canvas.width, H=canvas.height;
+  const pl=pShips[pIdx];
+  const M=currentMap;
+
+  // Cache gradients (only rebuilt on map change or resize)
+  ensureGradients(W,H,M);
+
+  // ── LIGHTNING timer (use actual dt in loop, not magic 16) ──
+  if(M.celestial==='lightning'){
+    lightningFlash=Math.max(0,lightningFlash-0.035);
+  }
+
+  // ── SKY ──
+  ctx.fillStyle=cachedSkyG;
+  ctx.fillRect(0,0,W,H*0.62);
+
+  // Lightning sky flash
+  if(lightningFlash>0){
+    ctx.fillStyle=`rgba(160,180,255,${(lightningFlash*0.18).toFixed(3)})`;
+    ctx.fillRect(0,0,W,H);
+  }
+
+  // ── STARS (deterministic positions, no per-frame random) ──
+  if(M.celestial==='moon'||M.celestial==='none'||M.celestial==='lightning'){
+    const starAlphaMult = M.celestial==='lightning'?0.3:0.75;
+    const vxOff = ((vX*22)%W+W)%W;
+    for(let i=0;i<100;i++){
+      const s=STARS[i];
+      const tx=((s.x+vxOff)%W+W)%W;
+      const ty=s.y/480*H*0.48;
+      ctx.globalAlpha = s.bright*starAlphaMult;
+      ctx.fillStyle='#ffffff';
+      ctx.fillRect(tx,ty,s.size,s.size);
+    }
+    ctx.globalAlpha=1;
+  }
+
+  // ── MOON ──
+  let moonX=0;
+  if(M.celestial==='moon'){
+    moonX=W*0.82+vX*-14;
+    const my=H*0.09;
+    // Use globalAlpha instead of gradient for the soft edge
+    ctx.save();
+    ctx.beginPath();ctx.arc(moonX,my,20,0,Math.PI*2);
+    const mG=ctx.createRadialGradient(moonX,my,0,moonX,my,20);
+    mG.addColorStop(0,'rgba(255,248,215,0.95)');
+    mG.addColorStop(0.7,'rgba(230,218,175,0.7)');
+    mG.addColorStop(1,'rgba(200,185,135,0)');
+    ctx.fillStyle=mG; ctx.fill();
+    ctx.restore();
+  }
+
+  // ── SUN (Mediterranean dusk) ──
+  if(M.celestial==='sun'){
+    const sx=W*0.72+vX*-10, sy=H*0.36;
+    const sunG=ctx.createRadialGradient(sx,sy,0,sx,sy,55);
+    sunG.addColorStop(0,'rgba(255,210,80,0.95)');
+    sunG.addColorStop(0.3,'rgba(255,140,30,0.6)');
+    sunG.addColorStop(0.7,'rgba(220,80,0,0.25)');
+    sunG.addColorStop(1,'rgba(180,50,0,0)');
+    ctx.fillStyle=sunG; ctx.beginPath(); ctx.arc(sx,sy,55,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sx,sy,16,0,Math.PI*2);
+    const sdG=ctx.createRadialGradient(sx,sy,0,sx,sy,16);
+    sdG.addColorStop(0,'rgba(255,240,160,1)'); sdG.addColorStop(1,'rgba(255,180,60,0.85)');
+    ctx.fillStyle=sdG; ctx.fill();
+  }
+
+  // ── SUN HIGH (Persian Gulf) ──
+  if(M.celestial==='sun_high'){
+    const sx=W*0.5+vX*-5, sy=H*0.08;
+    const sunG=ctx.createRadialGradient(sx,sy,0,sx,sy,70);
+    sunG.addColorStop(0,'rgba(255,250,200,0.9)');
+    sunG.addColorStop(0.4,'rgba(200,230,255,0.3)');
+    sunG.addColorStop(1,'rgba(150,200,255,0)');
+    ctx.fillStyle=sunG; ctx.beginPath(); ctx.arc(sx,sy,70,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sx,sy,13,0,Math.PI*2);
+    const sdG=ctx.createRadialGradient(sx,sy,0,sx,sy,13);
+    sdG.addColorStop(0,'rgba(255,255,240,1)'); sdG.addColorStop(1,'rgba(255,240,180,0.9)');
+    ctx.fillStyle=sdG; ctx.fill();
+  }
+
+  // ── LIGHTNING BOLT ──
+  if(M.celestial==='lightning'&&lightningFlash>0.6){
+    const lx=W*(0.2+((Date.now()/1000)%0.6));
+    ctx.strokeStyle=`rgba(200,210,255,${lightningFlash*0.9})`; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(lx,0);
+    let cy=0;
+    while(cy<H*0.55){ ctx.lineTo(lx+Math.sin(cy*0.05+wOff)*28, cy+=H*0.09); }
+    ctx.stroke();
+    ctx.strokeStyle=`rgba(255,255,255,${lightningFlash*0.5})`; ctx.lineWidth=0.6; ctx.stroke();
+  }
+
+  // ── CLIFF / COASTLINE (Mediterranean) — pre-stepped path ──
+  if(M.id==='mediterranean'){
+    const cliffBase=H*0.61;
+    const step=24;
+    ctx.fillStyle='#4a3020';
+    ctx.beginPath(); ctx.moveTo(0,cliffBase);
+    for(let x=0;x<=W;x+=step){
+      ctx.lineTo(x, cliffBase - H*0.08 - Math.sin(x*0.012+vX*0.02)*H*0.04 - Math.cos(x*0.023)*H*0.025);
+    }
+    ctx.lineTo(W,cliffBase); ctx.closePath(); ctx.fill();
+  }
+
+  // ── DESERT COAST (Persian Gulf) — cached gradient, larger steps ──
+  if(M.id==='persian_gulf'){
+    const dBase=H*0.615;
+    ctx.fillStyle=cachedDesertG||'#c89050';
+    ctx.beginPath(); ctx.moveTo(0,dBase);
+    for(let x=0;x<=W;x+=22){
+      ctx.lineTo(x, dBase - H*0.05 - Math.sin(x*0.01+vX*0.01)*H*0.015);
+    }
+    ctx.lineTo(W,dBase); ctx.closePath(); ctx.fill();
+  }
+
+  // ── HORIZON GLOW ──
+  ctx.fillStyle=cachedHorizonG;
+  ctx.fillRect(0,H*0.52,W,H*0.16);
+
+  // ── OCEAN ──
+  ctx.fillStyle=cachedOceanG;
+  ctx.fillRect(0,H*0.58,W,H*0.42);
+
+  // ── WATER SURFACE EFFECTS ──
+  const [wr,wg,wb]=M.waveCol;
+
+  // Moon glimmer — stable positions, no random per frame
+  if(M.celestial==='moon'){
+    ctx.lineWidth=1.4;
+    for(let i=0;i<12;i++){
+      const gd=GLIMMER[i];
+      const gx=moonX + Math.sin(wOff*1.3+gd.i*0.8)*22;
+      const gy=H*0.608+gd.base*0.9+Math.sin(wOff*2+gd.i)*4;
+      const ga=0.05-gd.i*0.003;
+      if(ga<=0) continue;
+      ctx.strokeStyle=`rgba(255,238,175,${ga.toFixed(3)})`;
+      ctx.beginPath(); ctx.moveTo(gx-gd.span,gy); ctx.lineTo(gx+gd.span,gy); ctx.stroke();
+    }
+  }
+
+  // Sun glitter (Mediterranean / Persian Gulf) — stable, no random
+  if(M.celestial==='sun'||M.celestial==='sun_high'){
+    const sunX=M.celestial==='sun'?W*0.72:W*0.5;
+    ctx.lineWidth=2;
+    for(let i=0;i<14;i++){
+      const gx=sunX + Math.sin(wOff*2+i*0.7)*55;
+      const gy=H*0.605+i*17+Math.sin(wOff*3+i)*3;
+      const ga=0.07-i*0.004;
+      if(ga<=0) continue;
+      ctx.strokeStyle=`rgba(255,230,100,${ga.toFixed(3)})`;
+      ctx.beginPath(); ctx.moveTo(gx-9-i*0.4,gy); ctx.lineTo(gx+9+i*0.4,gy); ctx.stroke();
+    }
+  }
+
+  // Wave lines — batched by colour group, fewer but taller waves
+  const waveAlphaBase=0.055, waveAlphaStep=0.007;
+  ctx.lineWidth=0.85;
+  for(let i=0;i<10;i++){  // reduced from 14 to 10
+    const wy=H*0.597+i*34+Math.sin(wOff*M.waveSpeed+i)*2.5;
+    ctx.strokeStyle=`rgba(${wr},${wg},${wb},${(waveAlphaBase+i*waveAlphaStep).toFixed(3)})`;
+    ctx.beginPath();
+    // Larger step (4px) = ~50% fewer vertices
+    for(let x=0;x<=W;x+=4){
+      const y=wy+Math.sin(x*0.017+wOff*M.waveChop+i*0.65)*M.waveH
+              +Math.sin(x*0.033+wOff*0.85)*M.waveH*0.4;
+      x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+
+  // Heavy swell (Pacific) — 3 instead of 5, larger steps
+  if(M.id==='pacific'){
+    for(let i=0;i<3;i++){
+      const wy=H*0.59+i*80;
+      ctx.strokeStyle=`rgba(30,80,130,${(0.15+i*0.04).toFixed(3)})`; ctx.lineWidth=3+i*1.5;
+      ctx.beginPath();
+      for(let x=0;x<=W;x+=8){
+        const y=wy+Math.sin(x*0.009+wOff*2.2+i*0.5)*22+Math.cos(x*0.018+wOff*1.1)*12;
+        x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    }
+    ctx.lineWidth=1;
+  }
+
+  const HZ=H*0.60, CX=W/2;
+  function w2s(wx,wy){
+    const px=pl?wx-pl.x:wx, py=pl?wy-pl.y:wy;
+    const sc=170/(170+Math.abs(py)*0.52);
+    return{sx:CX+(px-vX*185)*sc, sy:HZ+py*sc*0.57+vY*52, sc};
+  }
+
+  // ── ICEBERGS (Arctic) ──
+  if(M.id==='arctic'){
+    icebergs.forEach(icb=>{
+      const ps=w2s(icb.x,icb.y);
+      if(ps.sy<HZ-5)return;
+      ctx.save(); ctx.translate(ps.sx,ps.sy);
+      const sz=icb.sz*ps.sc;
+      const ibG=ctx.createLinearGradient(-sz,-sz*1.5,sz,sz*0.5);
+      ibG.addColorStop(0,'rgba(210,230,255,0.92)');
+      ibG.addColorStop(0.4,'rgba(160,200,240,0.85)');
+      ibG.addColorStop(1,'rgba(100,160,210,0.7)');
+      ctx.fillStyle=ibG;
+      ctx.beginPath();
+      ctx.moveTo(0,-sz*1.5); ctx.lineTo(sz*0.8,-sz*0.4); ctx.lineTo(sz*0.6,sz*0.3);
+      ctx.lineTo(-sz*0.5,sz*0.3); ctx.lineTo(-sz*0.9,-sz*0.3); ctx.lineTo(-sz*0.4,-sz*1.1);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle='rgba(180,220,255,0.5)'; ctx.lineWidth=0.8; ctx.stroke();
+      ctx.restore();
+    });
+  }
+
+  // ── SMOKE — draw to offscreen then composite (avoids per-particle gradient cost) ──
+  if(smoke.length>0){
+    ensureSmokeCanvas(W,H);
+    smokeCtx.clearRect(0,0,W,H);
+    const greyCol='rgba(70,60,50,1)';
+    smoke.forEach(p=>{
+      const ps=w2s(p.x,p.y);
+      if(ps.sy<HZ-10||ps.sy>H+60) return; // skip off-screen
+      const t=1-p.life/p.maxL;
+      const al=(1-t)*0.28;
+      if(al<0.02) return;
+      const r=p.r*ps.sc*(1+t*1.8);
+      smokeCtx.globalAlpha=al;
+      smokeCtx.fillStyle=greyCol;
+      smokeCtx.beginPath(); smokeCtx.arc(ps.sx,ps.sy,r,0,Math.PI*2); smokeCtx.fill();
+    });
+    smokeCtx.globalAlpha=1;
+    ctx.drawImage(smokeCanvas,0,0);
+  }
+
+  // ── TORPEDOES ──
+  torps.forEach(t=>{
+    const ps=w2s(t.x,t.y);
+    if(ps.sy<HZ-5)return;
+    const col=t.faction===side?'#00ffcc':'#ff6600';
+    ctx.save(); ctx.translate(ps.sx,ps.sy);
+    const ang=Math.atan2(t.vy,t.vx); ctx.rotate(ang);
+    ctx.fillStyle='rgba(255,255,255,0.12)';
+    ctx.fillRect(-13*ps.sc,-1.3*ps.sc,13*ps.sc,2.6*ps.sc);
+    ctx.fillStyle=col;
+    ctx.beginPath(); ctx.ellipse(0,0,7.5*ps.sc,2.2*ps.sc,0,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  });
+
+  // ── PLANES ──
+  planes.forEach(plane=>{
+    const ps=w2s(plane.x,plane.y);
+    if(ps.sy<HZ-30)return; // planes fly above water line
+
+    // Engine trail
+    if(plane.trail.length>1){
+      ctx.beginPath();
+      plane.trail.forEach((pt,i)=>{
+        const tps=w2s(pt.x,pt.y);
+        i===0?ctx.moveTo(tps.sx,tps.sy):ctx.lineTo(tps.sx,tps.sy);
+      });
+      const tcol=plane.faction===side?'rgba(120,200,255,0.5)':'rgba(255,140,80,0.5)';
+      ctx.strokeStyle=tcol;ctx.lineWidth=1.2*ps.sc;ctx.stroke();
+    }
+
+    // Plane silhouette (top-down, tiny)
+    ctx.save();ctx.translate(ps.sx,ps.sy);ctx.rotate(plane.ang);
+    const sz=5*ps.sc;
+    const pcol=plane.faction===side?'#88ccff':'#ffaa44';
+    // Fuselage
+    ctx.fillStyle=pcol;
+    ctx.fillRect(-sz*1.2,-sz*0.22,sz*2.4,sz*0.44);
+    // Wings
+    ctx.fillRect(-sz*0.3,-sz*1.1,sz*0.6,sz*2.2);
+    // Tail fins
+    ctx.fillRect(-sz*1.1,-sz*0.6,sz*0.5,sz*1.2);
+    // Engine glow at nose
+    ctx.fillStyle=plane.faction===side?'rgba(150,220,255,0.9)':'rgba(255,180,80,0.9)';
+    ctx.beginPath();ctx.arc(sz*1.1,0,sz*0.3,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  });
+
+  // ── SHIPS (depth-sorted) ──
+  ;[...eShips,...pShips].filter(s=>!s.dead)
+    .sort((a,b)=>w2s(a.x,a.y).sy-w2s(b.x,b.y).sy)
+    .forEach(ship=>{
+      const ps=w2s(ship.x,ship.y);
+      if(ps.sy<HZ-6)return;
+      drawShip(ship,ps.sx,ps.sy,ps.sc,ship===pShips[pIdx]);
+    });
+
+  // ── SHELLS — batch same-faction together ──
+  shells.forEach(sh=>{
+    const ps=w2s(sh.x,sh.y);
+    ctx.fillStyle=sh.faction===side?'#ffd700':'#ff8c00';
+    ctx.beginPath(); ctx.arc(ps.sx,ps.sy,3.5*ps.sc,0,Math.PI*2); ctx.fill();
+  });
+  // Tracer lines as a single path batch
+  shells.forEach(sh=>{
+    const ps=w2s(sh.x,sh.y);
+    ctx.strokeStyle=sh.faction===side?'rgba(255,215,0,0.22)':'rgba(255,140,0,0.22)';
+    ctx.lineWidth=0.9;
+    ctx.beginPath();
+    ctx.moveTo(ps.sx,ps.sy);
+    ctx.lineTo(ps.sx-sh.vx*0.38*ps.sc, ps.sy-sh.vy*0.38*ps.sc);
+    ctx.stroke();
+  });
+
+  // ── EXPLOSIONS — skip gradient for small ones ──
+  exps.forEach(e=>{
+    const ps=w2s(e.x,e.y);
+    const t=1-e.life/e.maxL;
+    const r=e.r*t*ps.sc; const al=(1-t)*0.88;
+    if(r<2)return;
+    if(r<8){
+      // Small explosion: simple filled circle
+      ctx.globalAlpha=al*0.8;
+      ctx.fillStyle='#ff8c00';
+      ctx.beginPath(); ctx.arc(ps.sx,ps.sy,r,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha=1;
+    } else {
+      const eg=ctx.createRadialGradient(ps.sx,ps.sy,0,ps.sx,ps.sy,r);
+      eg.addColorStop(0,`rgba(255,255,215,${al})`);
+      eg.addColorStop(0.22,`rgba(255,195,45,${al*0.92})`);
+      eg.addColorStop(0.5,`rgba(220,75,0,${al*0.72})`);
+      eg.addColorStop(0.8,`rgba(140,35,0,${al*0.38})`);
+      eg.addColorStop(1,'rgba(70,15,0,0)');
+      ctx.fillStyle=eg; ctx.beginPath(); ctx.arc(ps.sx,ps.sy,r,0,Math.PI*2); ctx.fill();
+    }
+  });
+  ctx.globalAlpha=1;
+
+  // ── WEATHER OVERLAYS ──
+  if(M.weather==='blizzard'){
+    ctx.fillStyle='#dce8ff';
+    ambientParticles.forEach(p=>{
+      ctx.globalAlpha=p.a*0.85;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha=1;
+    // Blizzard vignette
+    const blizG=ctx.createRadialGradient(W/2,H/2,H*0.2,W/2,H/2,H*0.8);
+    blizG.addColorStop(0,'rgba(0,0,0,0)');
+    blizG.addColorStop(1,'rgba(180,200,225,0.16)');
+    ctx.fillStyle=blizG; ctx.fillRect(0,0,W,H);
+  }
+
+  if(M.weather==='storm'){
+    ctx.strokeStyle='rgba(150,180,220,0.25)'; ctx.lineWidth=0.7;
+    ambientParticles.forEach(p=>{
+      ctx.globalAlpha=p.a;
+      ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x+p.wx*3,p.y+p.r*5); ctx.stroke();
+    });
+    ctx.globalAlpha=1;
+    ctx.fillStyle='rgba(0,0,0,0.14)'; ctx.fillRect(0,0,W,H);
+  }
+
+  if(M.weather==='haze'){
+    ctx.fillStyle=`rgba(200,220,240,${(0.055+Math.sin(wOff*0.8)*0.018).toFixed(3)})`;
+    ctx.fillRect(0,H*0.55,W,H*0.14);
+  }
+
+  if(M.fogDensity>0){
+    const fogG=ctx.createLinearGradient(0,H*0.54,0,H*0.72);
+    fogG.addColorStop(0,'rgba(0,0,0,0)');
+    fogG.addColorStop(0.5,`rgba(160,185,210,${(M.fogDensity*0.35).toFixed(3)})`);
+    fogG.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=fogG; ctx.fillRect(0,H*0.54,W,H*0.2);
+  }
+
+  drawMM();
+  const xh=document.getElementById('xh');
+  xh.style.left=mX+'px'; xh.style.top=mY+'px';
+}
+// ══════════════════════════════════════
+//  REALISTIC SHIP DRAWING
+// ══════════════════════════════════════
+function drawShip(ship,sx,sy,sc,isP){
+  const L=ship.size*sc*12.5;
+  const BW=Math.max(3,L*0.13);
+  const nc=ship.nation;
+  const hc=HULL[nc]||HULL.us;
+  const dc=DECK[nc]||DECK.us;
+  const stc=STRC[nc]||STRC.us;
+  const dmgR=Math.max(0,ship.hp/ship.maxHP);
+
+  ctx.save();ctx.translate(sx,sy);
+  // Rotate ship to its heading (player ship uses actual heading; AI ships face their target)
+  if(typeof ship.heading==='number') ctx.rotate(ship.heading);
+
+  // ── WAKE ──
+  ctx.save();
+  ctx.strokeStyle=`rgba(110,170,240,${0.10+sc*0.04})`;
+  ctx.lineWidth=BW*0.55*sc;
+  ctx.beginPath();ctx.moveTo(-L*0.5,0);ctx.quadraticCurveTo(-L*1.05,BW*1.8,-L*1.5,BW*3.8);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(-L*0.5,0);ctx.quadraticCurveTo(-L*1.05,-BW*1.8,-L*1.5,-BW*3.8);ctx.stroke();
+  // Bow wave
+  ctx.strokeStyle=`rgba(190,220,255,${0.15+sc*0.06})`;ctx.lineWidth=0.9;
+  ctx.beginPath();ctx.moveTo(L*0.48,-BW*0.7);ctx.lineTo(L*0.78,0);ctx.lineTo(L*0.48,BW*0.7);ctx.stroke();
+  ctx.restore();
+
+  // ── HULL BODY ──
+  ctx.beginPath();
+  if(ship.prof==='battleship'){
+    // Wide, imposing hull with pronounced bow
+    ctx.moveTo(-L*0.48,BW*0.35);
+    ctx.lineTo(-L*0.35,-BW*0.72);
+    ctx.lineTo(L*0.28,-BW*0.78);
+    ctx.lineTo(L*0.52,-BW*0.22);
+    ctx.lineTo(L*0.62,0);
+    ctx.lineTo(L*0.52,BW*0.22);
+    ctx.lineTo(L*0.28,BW*0.78);
+    ctx.lineTo(-L*0.35,BW*0.72);
+  } else if(ship.prof==='battlecruiser'){
+    ctx.moveTo(-L*0.47,BW*0.3);
+    ctx.lineTo(-L*0.36,-BW*0.68);
+    ctx.lineTo(L*0.3,-BW*0.72);
+    ctx.lineTo(L*0.54,-BW*0.18);
+    ctx.lineTo(L*0.64,0);
+    ctx.lineTo(L*0.54,BW*0.18);
+    ctx.lineTo(L*0.3,BW*0.72);
+    ctx.lineTo(-L*0.36,BW*0.68);
+  } else if(ship.prof==='carrier'){
+    // Carrier: long flat hull, squared off
+    ctx.moveTo(-L*0.5,BW*0.45);
+    ctx.lineTo(-L*0.44,-BW*0.48);
+    ctx.lineTo(L*0.36,-BW*0.72);
+    ctx.lineTo(L*0.58,0);
+    ctx.lineTo(L*0.36,BW*0.72);
+    ctx.lineTo(-L*0.44,BW*0.48);
+  } else if(ship.prof==='cargo'){
+    // Boxy cargo ship
+    ctx.moveTo(-L*0.5,BW*0.55);
+    ctx.lineTo(-L*0.46,-BW*0.55);
+    ctx.lineTo(L*0.28,-BW*0.75);
+    ctx.lineTo(L*0.52,0);
+    ctx.lineTo(L*0.28,BW*0.75);
+    ctx.lineTo(-L*0.46,BW*0.55);
+  } else if(ship.prof==='submonitor'){
+    // Very low, wide, almost submarine-like
+    ctx.moveTo(-L*0.4,BW*0.22);
+    ctx.lineTo(-L*0.32,-BW*0.3);
+    ctx.lineTo(L*0.36,-BW*0.32);
+    ctx.lineTo(L*0.5,0);
+    ctx.lineTo(L*0.36,BW*0.32);
+    ctx.lineTo(-L*0.32,BW*0.3);
+  } else {
+    // Destroyer/frigate/cruiser: sleek
+    ctx.moveTo(-L*0.46,BW*0.32);
+    ctx.lineTo(-L*0.36,-BW*0.55);
+    ctx.lineTo(L*0.36,-BW*0.62);
+    ctx.lineTo(L*0.58,-BW*0.1);
+    ctx.lineTo(L*0.66,0);
+    ctx.lineTo(L*0.58,BW*0.1);
+    ctx.lineTo(L*0.36,BW*0.62);
+    ctx.lineTo(-L*0.36,BW*0.55);
+  }
+  ctx.closePath();
+  // Hull: solid colour top, dark bottom — avoids per-frame gradient creation
+  ctx.fillStyle=hc[0];ctx.fill();
+  // Dark bottom half tint via simple rect (much cheaper than gradient)
+  ctx.save();ctx.clip();
+  ctx.fillStyle='rgba(5,12,28,0.45)';
+  ctx.fillRect(-L*0.7,0,L*1.4,BW);
+  ctx.restore();
+  ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=0.9;ctx.stroke();
+
+  // Boot topping (red waterline stripe)
+  ctx.save();ctx.clip();
+  ctx.fillStyle='rgba(110,15,15,0.65)';
+  ctx.fillRect(-L*0.7,BW*0.04,L*1.4,BW*0.2);
+  ctx.restore();
+
+  // ── DECK ──
+  ctx.fillStyle=dc;
+  if(ship.prof==='carrier'){
+    // Flight deck (extends wider than hull)
+    ctx.fillRect(-L*0.46,-BW*1.18,L*0.9,BW*0.56);
+    ctx.fillRect(-L*0.46,BW*0.62,L*0.9,BW*0.56);
+    // Landing markings
+    ctx.strokeStyle='rgba(255,255,100,0.28)';ctx.lineWidth=0.7;
+    ctx.beginPath();ctx.moveTo(-L*0.44,-BW*1.13);ctx.lineTo(L*0.42,-BW*1.13);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(-L*0.44,BW*1.13);ctx.lineTo(L*0.42,BW*1.13);ctx.stroke();
+    // Catapult slots
+    ctx.strokeStyle='rgba(200,180,100,0.2)';
+    ctx.beginPath();ctx.moveTo(-L*0.18,-BW*0.95);ctx.lineTo(L*0.42,-BW*0.95);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(-L*0.18,-BW*0.75);ctx.lineTo(L*0.42,-BW*0.75);ctx.stroke();
+    // Parked aircraft silhouettes
+    for(let i=0;i<3;i++){
+      ctx.fillStyle='rgba(80,90,110,0.5)';
+      ctx.fillRect(-L*0.3+i*L*0.18,-BW*1.06,L*0.09,BW*0.22);
+    }
+  } else if(ship.prof==='submonitor'){
+    ctx.fillRect(-L*0.38,-BW*0.28,L*0.78,BW*0.56);
+  } else if(ship.prof==='medical'){
+    ctx.fillStyle='rgba(240,240,240,0.6)';
+    ctx.fillRect(-L*0.4,-BW*0.48,L*0.82,BW*0.96);
+  } else if(ship.prof==='cargo'){
+    ctx.fillRect(-L*0.42,-BW*0.5,L*0.84,BW*1.0);
+  } else {
+    ctx.fillRect(-L*0.4,-BW*0.48,L*0.82,BW*0.96);
+    ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=0.7;
+    ctx.strokeRect(-L*0.4,-BW*0.48,L*0.82,BW*0.96);
+  }
+
+  // ── SUPERSTRUCTURE / ISLAND ──
+  if(ship.prof!=='cargo'&&ship.prof!=='medical'&&ship.prof!=='submonitor'){
+    const isX=ship.prof==='carrier'?L*0.06:-L*0.04;
+    const isW=L*0.2,isH=BW*1.05;
+    const isTop=-BW*1.55;
+
+    // Main block
+    ctx.fillStyle=stc;
+    // Multi-level look
+    ctx.fillRect(isX,isTop,isW,isH);
+    ctx.fillStyle=`rgba(255,255,255,0.04)`;
+    ctx.fillRect(isX,isTop,isW,isH*0.38); // lighter top level
+    ctx.fillStyle=`rgba(0,0,0,0.25)`;
+    ctx.fillRect(isX,isTop+isH*0.38,isW,isH*0.62); // darker base
+
+    // Bridge windows
+    ctx.fillStyle=`rgba(140,195,255,0.18)`;
+    for(let r=0;r<2;r++){
+      for(let c=0;c<3;c++){
+        ctx.fillRect(isX+2+c*(isW/3-0.5),isTop+BW*0.14+r*BW*0.44,isW/3-4,BW*0.26);
+      }
+    }
+
+    // Mast
+    ctx.strokeStyle='rgba(170,170,170,0.65)';ctx.lineWidth=1.1;
+    const mastX=isX+isW*0.5;
+    ctx.beginPath();ctx.moveTo(mastX,isTop);ctx.lineTo(mastX,isTop-BW*1.7);ctx.stroke();
+    // Yardarms
+    ctx.lineWidth=0.8;
+    ctx.beginPath();ctx.moveTo(mastX-BW*0.75,isTop-BW*1.1);ctx.lineTo(mastX+BW*0.75,isTop-BW*1.1);ctx.stroke();
+    // Radar
+    ctx.strokeStyle='rgba(160,160,160,0.45)';
+    ctx.beginPath();ctx.ellipse(mastX,isTop-BW*1.7,BW*0.62,BW*0.22,0,0,Math.PI*2);ctx.stroke();
+
+    // Funnel (big ships)
+    if(ship.prof==='battleship'||ship.prof==='battlecruiser'||ship.prof==='cruiser'){
+      const fX=isX-L*0.09;
+      ctx.fillStyle='rgba(35,35,35,0.92)';
+      ctx.fillRect(fX,-BW*0.75,BW*0.5,BW*0.75);
+      // Faction stripe on funnel
+      ctx.fillStyle=NCOL[nc]+'55';
+      ctx.fillRect(fX,-BW*0.35,BW*0.5,BW*0.18);
+      // Funnel cap
+      ctx.fillStyle='rgba(20,20,20,0.9)';
+      ctx.fillRect(fX-1,-BW*0.78,BW*0.52,BW*0.1);
+    }
+
+    // Fore structure
+    if(ship.prof==='battleship'||ship.prof==='battlecruiser'){
+      ctx.fillStyle=stc;
+      ctx.fillRect(L*0.14,-BW*1.25,L*0.09,BW*0.75);
+      ctx.strokeStyle='rgba(150,150,150,0.5)';ctx.lineWidth=0.8;
+      ctx.beginPath();ctx.moveTo(L*0.185,-BW*1.25);ctx.lineTo(L*0.185,-BW*2.3);ctx.stroke();
+    }
+  }
+
+  // ── CARGO CRANES ──
+  if(ship.prof==='cargo'){
+    ctx.fillStyle=stc;
+    ctx.fillRect(-L*0.05,-BW*1.4,L*0.1,BW*0.9); // bridge
+    for(let i=0;i<3;i++){
+      const cx2=-L*0.3+i*L*0.25;
+      ctx.fillStyle='rgba(90,80,60,0.7)';
+      ctx.fillRect(cx2-BW*0.26,-BW*0.52,BW*0.52,BW*1.04);
+      ctx.strokeStyle='rgba(150,130,90,0.45)';ctx.lineWidth=0.8;
+      ctx.beginPath();ctx.moveTo(cx2,-BW*0.52);ctx.lineTo(cx2,-BW*1.85);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(cx2,-BW*1.85);ctx.lineTo(cx2+BW*1.1,-BW*0.5);ctx.stroke();
+    }
+  }
+
+  // ── MEDICAL CROSS ──
+  if(ship.prof==='medical'){
+    ctx.fillStyle=stc;ctx.fillRect(-L*0.08,-BW*1.4,L*0.12,BW*0.85);
+    ctx.fillStyle='rgba(255,255,255,0.92)';
+    ctx.fillRect(-BW*0.14,-BW*0.95,BW*0.28,BW*0.9);
+    ctx.fillRect(-BW*0.42,-BW*0.58,BW*0.84,BW*0.28);
+  }
+
+  // ── SUBMONITOR TURRET DOME ──
+  if(ship.prof==='submonitor'){
+    ctx.fillStyle=stc;
+    ctx.beginPath();ctx.arc(0,-BW*0.1,BW*0.7,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=0.8;ctx.stroke();
+    // Gun barrel
+    ctx.fillStyle='rgba(30,30,30,0.9)';
+    ctx.fillRect(BW*0.7,-BW*0.1,L*0.32,BW*0.22);
+  }
+
+  // ── TURRETS (proper naval placement) ──
+  if(ship.turrets>0&&ship.prof!=='carrier'&&ship.prof!=='cargo'&&ship.prof!=='medical'&&ship.prof!=='submonitor'){
+    turretPositions(ship.prof,ship.turrets,L,BW).forEach(tp=>{
+      drawTurret(tp.x,tp.y,tp.sz,nc);
+    });
+  }
+
+  // ── TORPEDO TUBES ──
+  if(ship.torps>=6&&ship.prof!=='carrier'){
+    ctx.fillStyle='rgba(55,55,65,0.85)';
+    ctx.fillRect(-L*0.04,BW*0.25,L*0.14,BW*0.2);
+    ctx.fillRect(-L*0.04,-BW*0.45,L*0.14,BW*0.2);
+  }
+
+  // ── ANCHOR CHAIN / BOW DETAIL ──
+  ctx.strokeStyle='rgba(80,80,80,0.4)';ctx.lineWidth=0.7;
+  ctx.beginPath();ctx.moveTo(L*0.44,-BW*0.25);ctx.lineTo(L*0.55,0);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(L*0.44,BW*0.25);ctx.lineTo(L*0.55,0);ctx.stroke();
+
+  // ── FIRE EFFECT ──
+  if(ship.onFire&&ship.fi>0){
+    const fg=ctx.createRadialGradient(0,-BW*0.25,0,0,-BW*0.25,BW*2.4*ship.fi);
+    fg.addColorStop(0,`rgba(255,200,0,${ship.fi*0.48})`);
+    fg.addColorStop(0.45,`rgba(255,55,0,${ship.fi*0.3})`);
+    fg.addColorStop(1,'rgba(190,0,0,0)');
+    ctx.fillStyle=fg;
+    ctx.beginPath();ctx.arc(0,-BW*0.25,BW*2.4*ship.fi,0,Math.PI*2);ctx.fill();
+  }
+
+  // ── HP BAR ──
+  const bW=Math.min(L*1.08,78);
+  ctx.fillStyle='rgba(0,0,0,0.52)';ctx.fillRect(-bW/2,-BW*2.0,bW,3.2);
+  const bc=dmgR>0.6?'#39ff14':dmgR>0.3?'#ffd700':'#ff2222';
+  ctx.fillStyle=bc;ctx.fillRect(-bW/2,-BW*2.0,bW*dmgR,3.2);
+
+  // ── NATION FLAG (tiny) on superstructure ──
+  if(sc>0.55&&ship.prof!=='cargo'&&ship.prof!=='medical'){
+    ctx.fillStyle=NCOL[nc]+'88';
+    ctx.fillRect(-L*0.04,-BW*1.58,BW*0.5,BW*0.22);
+  }
+
+  // ── NAME LABEL ──
+  if(isP||sc>0.7){
+    const ncl=isP?'#ffd700':NCOL[ship.nation]||'#aaa';
+    ctx.fillStyle=ncl;
+    ctx.font=`${Math.max(7,8.5*sc)}px 'Share Tech Mono'`;
+    ctx.textAlign='center';
+    ctx.fillText(ship.name,0,-BW*2.5);
+  }
+
+  // ── PLAYER RING ──
+  if(isP){
+    ctx.strokeStyle='rgba(255,215,0,0.75)';ctx.lineWidth=1.5;
+    ctx.setLineDash([5,4]);
+    ctx.beginPath();ctx.arc(0,0,L*0.72,0,Math.PI*2);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  ctx.restore();
+}
+
+function turretPositions(prof,count,L,W){
+  const sz=W*1.05;
+  const out=[];
+  let pts=[];
+  if(prof==='battleship'){
+    pts=[
+      {x:L*0.3,y:0},{x:L*0.2,y:0},{x:L*0.1,y:0},
+      {x:-L*0.08,y:0},{x:-L*0.18,y:0},{x:-L*0.28,y:0},
+      {x:L*0.28,y:-W*0.4},{x:L*0.28,y:W*0.4},
+    ];
+  } else if(prof==='battlecruiser'){
+    pts=[
+      {x:L*0.28,y:0},{x:L*0.17,y:0},{x:-L*0.06,y:0},
+      {x:-L*0.18,y:0},{x:L*0.22,y:-W*0.38},{x:L*0.22,y:W*0.38},
+      {x:-L*0.28,y:0},{x:-L*0.32,y:0}
+    ];
+  } else if(prof==='cruiser'){
+    pts=[
+      {x:L*0.27,y:0},{x:L*0.16,y:0},{x:-L*0.05,y:0},
+      {x:-L*0.16,y:0},{x:L*0.21,y:-W*0.36},{x:L*0.21,y:W*0.36}
+    ];
+  } else {
+    // destroyer/frigate
+    pts=[
+      {x:L*0.28,y:0},{x:L*0.15,y:0},{x:-L*0.04,y:0},
+      {x:-L*0.16,y:0},{x:-L*0.27,y:0}
+    ];
+  }
+  return pts.slice(0,Math.min(count,pts.length)).map(p=>({...p,sz}));
+}
+
+function drawTurret(tx,ty,sz,nation){
+  ctx.save();ctx.translate(tx,ty);
+  ctx.fillStyle=STRC[nation]||'#333';
+  ctx.beginPath();
+  // Hexagonal turret base
+  ctx.arc(0,0,sz,0,Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=0.7;ctx.stroke();
+  // Gun barrels
+  ctx.fillStyle='rgba(30,30,30,0.92)';
+  ctx.fillRect(sz*0.12,-sz*0.16,sz*1.08,sz*0.32);
+  if(sz>7){
+    ctx.fillRect(sz*0.12,-sz*0.46,sz*1.0,sz*0.26);
+  }
+  // Rangefinder bump
+  ctx.fillStyle='rgba(50,50,50,0.6)';
+  ctx.beginPath();ctx.arc(-sz*0.2,0,sz*0.32,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+
+// ══════════════════════════════════════
+//  MINIMAP
+// ══════════════════════════════════════
+function drawMM(){
+  const mm=mmCtx,mw=172,mh=112;
+  mm.fillStyle='rgba(0,5,16,0.96)';mm.fillRect(0,0,mw,mh);
+  mm.strokeStyle='rgba(100,180,255,0.22)';mm.strokeRect(0,0,mw,mh);
+  mm.strokeStyle='rgba(255,255,255,0.05)';
+  mm.beginPath();mm.moveTo(mw/2,0);mm.lineTo(mw/2,mh);mm.stroke();
+  mm.beginPath();mm.moveTo(0,mh/2);mm.lineTo(mw,mh/2);mm.stroke();
+  function wm(x,y){return{mx:mw/2+x/8,my:mh/2+y/8};}
+  pShips.forEach((s,i)=>{
+    if(s.dead)return;
+    const{mx,my}=wm(s.x,s.y);
+    mm.fillStyle=i===pIdx?'#ffd700':NCOL[s.nation]||'#4a9eff';
+    mm.beginPath();mm.arc(mx,my,i===pIdx?4:2.5,0,Math.PI*2);mm.fill();
+  });
+  eShips.forEach(s=>{
+    if(s.dead)return;
+    const{mx,my}=wm(s.x,s.y);
+    mm.fillStyle=NCOL[s.nation]||'#ff4a4a';
+    mm.beginPath();mm.arc(mx,my,2.5,0,Math.PI*2);mm.fill();
+  });
+  torps.forEach(t=>{
+    const{mx,my}=wm(t.x,t.y);
+    mm.fillStyle=t.faction===side?'#00ffcc':'#ffaa00';
+    mm.beginPath();mm.arc(mx,my,1.5,0,Math.PI*2);mm.fill();
+  });
+  mm.fillStyle='rgba(75,115,175,0.5)';mm.font='7px Share Tech Mono';mm.fillText('TACTICAL',4,9);
+}
+
+// ══════════════════════════════════════
+//  HUD
+// ══════════════════════════════════════
+function updateHUD(){
+  document.getElementById('timer').textContent=fmt(gTime);
+  document.getElementById('pSc').textContent=pSc;
+  document.getElementById('eSc').textContent=eSc;
+  const pl=pShips[pIdx];
+  if(pl&&!pl.dead){
+    document.getElementById('pName').textContent=pl.name;
+    document.getElementById('pCls').textContent=pl.cls;
+    const hp=Math.max(0,Math.round(pl.hp/pl.maxHP*100));
+    document.getElementById('pHP').textContent=hp+'%';
+    const b=document.getElementById('pHPbar');
+    b.style.width=hp+'%';
+    b.style.background=hp>60?'var(--green)':hp>30?'var(--orange)':'var(--red)';
+    document.getElementById('pSpd').textContent=(pl.vel?Math.abs(pl.vel*2.8).toFixed(1):0)+' / '+pl.speed+' kts';
+    if(pl.cls==='Carrier'){
+      const pfm=document.getElementById('fm');
+      // Show persistent plane count when on carrier
+      if(!pfm.style.opacity||pfm.style.opacity==='0'){
+        pfm.textContent='✈ AIRCRAFT: '+(pl.maxPlanes-pl.planesOut)+' READY  [P] LAUNCH';
+        pfm.style.opacity='0.7';
+      }
+    }
+    document.getElementById('pArm').textContent=pl.armor;
+    document.getElementById('pTrp').textContent=pl.torps>0?pl.torps+' tubes':'None';
+  }
+  const p2=pShips[pIdx];
+  if(p2&&!p2.dead){
+    const _alive=eShips.filter(r=>!r.dead);
+    const nr=_alive.length?nearest(p2,_alive):null;
+    if(nr){
+      document.getElementById('tName').textContent=nr.name;
+      document.getElementById('tCls').textContent=nr.cls;
+      const eh=Math.max(0,Math.round(nr.hp/nr.maxHP*100));
+      document.getElementById('tHP').textContent=eh+'%';
+      const tb=document.getElementById('tHPbar');
+      tb.style.width=eh+'%';
+      tb.style.background=eh>60?'var(--red)':eh>30?'var(--orange)':'#ff6600';
+      document.getElementById('tRng').textContent=Math.round(dst(p2,nr))+'m';
+      document.getElementById('tSts').textContent=nr.hp<nr.maxHP*0.3?'🔥 CRITICAL':eh<60?'⚠ DAMAGED':'COMBAT READY';
+    } else {
+      document.getElementById('tName').textContent='—';
+      document.getElementById('tSts').textContent='ALL CLEAR';
+    }
+  }
+}
+
+function buildSel(){
+  const sel=document.getElementById('shipSel');
+  sel.innerHTML='';
+  pShips.forEach((ship,i)=>{
+    const btn=document.createElement('button');
+    btn.className='sbtn2'+(i===pIdx?' active':'')+(ship.dead?' dead':'');
+    const fl=ship.nation==='uk'?'🇬🇧':ship.nation==='sa'?'🇸🇦':ship.nation==='ru'?'🇷🇺':ship.nation==='cn'?'🇨🇳':ship.nation==='ph'?'🇵🇭':ship.nation==='il'?'🇮🇱':ship.nation==='br'?'🇧🇷':ship.nation==='fr'?'🇫🇷':'🇺🇸';
+    const short=ship.name.replace(/^(USS |HMS |CKA-|ZAB-|AND-|LCS-|BAN-|FJK-|SD )/,'');
+    btn.innerHTML=`[${i+1}]${fl}${ship.sym}<br><span class="sc">${short.length>10?short.slice(0,10)+'…':short}</span>`;
+    btn.onclick=()=>switchShip(i);
+    sel.appendChild(btn);
+  });
+}
+
+function setLabels(){
+  document.getElementById('pLbl').textContent=side==='us'?'ALLIED':'EASTERN';
+  document.getElementById('eLbl').textContent=side==='us'?'EASTERN':'ALLIED';
+}
+
+function fmt(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return`${String(m).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;}
+
+// ══════════════════════════════════════
+//  GAME CONTROL
+// ══════════════════════════════════════
+function startGame(){
+  if(!sided)return;
+  document.getElementById('mapScr').classList.add('hidden');
+  document.getElementById('ui').style.display='block';
+  setupCanvas();initShips();buildSel();setLabels();
+  // Set location label
+  document.getElementById('locLbl').textContent=currentMap.location;
+  // Init ambient particles
+  ambientParticles=[];
+  const W=window.innerWidth,H=window.innerHeight;
+  if(currentMap.weather==='blizzard'){
+    for(let i=0;i<120;i++) ambientParticles.push({
+      x:Math.random()*W,y:Math.random()*H,
+      r:Math.random()*2+0.5,
+      vx:(Math.random()-.3)*currentMap.windSpd,
+      vy:1+Math.random()*2,
+      a:0.3+Math.random()*0.5
+    });
+  }
+  if(currentMap.weather==='storm'){
+    for(let i=0;i<180;i++) ambientParticles.push({
+      x:Math.random()*W,y:Math.random()*H,
+      r:Math.random()*6+3,
+      wx:(Math.random()-.5)*currentMap.windSpd,
+      vy:8+Math.random()*5,
+      a:0.2+Math.random()*0.35
+    });
+  }
+  // Init icebergs
+  icebergs=[];
+  if(currentMap.id==='arctic'){
+    for(let i=0;i<8;i++) icebergs.push({
+      x:(Math.random()-.5)*900,
+      y:(Math.random()-.5)*600,
+      sz:18+Math.random()*35,
+      vx:(Math.random()-.5)*0.02,
+    });
+  }
+  lightningFlash=0;lightningTimer=2000+Math.random()*3000;
+  running=true;gTime=0;pSc=0;eSc=0;
+  shells=[];torps=[];exps=[];smoke=[];planes=[];
+  canFire=true;canTorp=true;fMode='guns';
+  lastT=performance.now();
+  requestAnimationFrame(loop);
+}
+
+window.addEventListener('resize',()=>{if(canvas){canvas.width=window.innerWidth;canvas.height=window.innerHeight;invalidateGradients();}});
+</script>
+</body>
+</html>
+
