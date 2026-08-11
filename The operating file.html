@@ -1,3 +1,286 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pokemon Card Creator — Operating File</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Roboto, "Helvetica Neue", Arial; margin: 20px; }
+    .grid { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
+    .panel { padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: #fff; }
+    label { display:block; margin-bottom:6px; font-weight:600 }
+    select, input { width:100%; padding:8px; font-size:14px; }
+    .preview { text-align:center; }
+    .sprite { width:200px; height:200px; image-rendering: pixelated; margin: 12px auto; }
+    .meta { display:flex; justify-content:center; gap:12px; margin-top:8px; }
+    .type { padding:6px 10px; border-radius:14px; color:#fff; font-weight:600 }
+    .types { display:flex; gap:8px; justify-content:center }
+    .stats { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:10px }
+    .stat { padding:6px 10px; background:#f6f6f6; border-radius:8px }
+    .small { font-size:13px; color:#666 }
+    .controls { display:flex; gap:8px; margin-top:10px; justify-content:center }
+    .btn { padding:8px 12px; border-radius:8px; border:1px solid #ccc; background:#fafafa; cursor:pointer }
+  </style>
+</head>
+<body>
+  <h1>Pokemon Card Creator — Select a base Pokémon</h1>
+  <p class="small">This page uses the public <a href="https://pokeapi.co/" target="_blank">PokeAPI</a> to fetch Pokémon data and sprites. You can select a base Pokémon to preview its appearance and core stats.</p>
+
+  <div class="grid">
+    <div class="panel">
+      <label for="pokemonSearch">Search by name or select from list</label>
+      <input id="pokemonSearch" placeholder="e.g. pikachu" />
+      <select id="pokemonSelect" size="12" style="margin-top:8px"></select>
+
+      <div style="margin-top:12px">
+        <label for="limitSelect">Number of Pokémon to load</label>
+        <select id="limitSelect">
+          <option value="151">151 (Kanto)</option>
+          <option value="251">251 (Johto)</option>
+          <option value="386">386 (Hoenn)</option>
+          <option value="898">898 (All modern)</option>
+          <option value="1118">1118 (Full - may be slow)</option>
+        </select>
+      </div>
+
+      <div style="margin-top:12px" class="small">Offline fallback: if the API is unreachable, a small sample set will be used.</div>
+    </div>
+
+    <div class="panel">
+      <div class="preview">
+        <h2 id="p-name">—</h2>
+        <img id="p-sprite" class="sprite" src="" alt="sprite" />
+        <div class="types" id="p-types"></div>
+        <div class="meta">
+          <div class="small">Height: <span id="p-height">-</span></div>
+          <div class="small">Weight: <span id="p-weight">-</span></div>
+        </div>
+
+        <div class="stats" id="p-stats"></div>
+
+        <div class="controls">
+          <button id="toggleShiny" class="btn">Toggle Shiny</button>
+          <button id="downloadCard" class="btn">Download Preview (PNG)</button>
+        </div>
+
+        <div style="margin-top:12px; font-size:13px; color:#555;">Tip: click a Pokémon in the list to load it. Use search to jump directly.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Basic offline fallback list (small sample) used if PokeAPI cannot be reached
+    const OFFLINE_SAMPLE = [
+      { name: 'bulbasaur', url: 'https://pokeapi.co/api/v2/pokemon/1/' },
+      { name: 'ivysaur', url: 'https://pokeapi.co/api/v2/pokemon/2/' },
+      { name: 'venusaur', url: 'https://pokeapi.co/api/v2/pokemon/3/' },
+      { name: 'charmander', url: 'https://pokeapi.co/api/v2/pokemon/4/' },
+      { name: 'charizard', url: 'https://pokeapi.co/api/v2/pokemon/6/' },
+      { name: 'squirtle', url: 'https://pokeapi.co/api/v2/pokemon/7/' },
+      { name: 'pikachu', url: 'https://pokeapi.co/api/v2/pokemon/25/' }
+    ];
+
+    const select = document.getElementById('pokemonSelect');
+    const search = document.getElementById('pokemonSearch');
+    const limitSelect = document.getElementById('limitSelect');
+
+    const nameEl = document.getElementById('p-name');
+    const spriteEl = document.getElementById('p-sprite');
+    const typesEl = document.getElementById('p-types');
+    const heightEl = document.getElementById('p-height');
+    const weightEl = document.getElementById('p-weight');
+    const statsEl = document.getElementById('p-stats');
+    const toggleShinyBtn = document.getElementById('toggleShiny');
+    const downloadBtn = document.getElementById('downloadCard');
+
+    let pokemonList = [];
+    let currentPokemon = null;
+    let useShiny = false;
+
+    async function loadPokemonList(limit = 151) {
+      select.innerHTML = '';
+      nameEl.textContent = 'Loading…';
+      try {
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=${limit}`);
+        if (!res.ok) throw new Error('API error');
+        const data = await res.json();
+        pokemonList = data.results;
+        populateSelect(pokemonList);
+        nameEl.textContent = 'Choose a Pokémon';
+      } catch (err) {
+        console.warn('Could not fetch from PokeAPI — using offline sample', err);
+        pokemonList = OFFLINE_SAMPLE;
+        populateSelect(pokemonList);
+        nameEl.textContent = 'Choose a Pokémon (offline sample)';
+      }
+    }
+
+    function populateSelect(list) {
+      select.innerHTML = '';
+      list.forEach((p, i) => {
+        const opt = document.createElement('option');
+        opt.value = p.url;
+        opt.textContent = `${String(i+1).padStart(3,' ')} — ${capitalize(p.name)}`;
+        select.appendChild(opt);
+      });
+    }
+
+    function capitalize(s){ return s && s[0].toUpperCase() + s.slice(1); }
+
+    async function loadPokemon(url) {
+      try {
+        nameEl.textContent = 'Loading…';
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Failed to fetch pokemon');
+        const data = await res.json();
+        currentPokemon = data;
+        renderPokemon(data);
+      } catch (err) {
+        console.error(err);
+        alert('Failed to load that Pokémon. Check console for details.');
+      }
+    }
+
+    function renderPokemon(p) {
+      const displayName = capitalize(p.name) + (p.id ? ` #${p.id}` : '');
+      nameEl.textContent = displayName;
+
+      const sprite = chooseSprite(p.sprites);
+      spriteEl.src = sprite || '';
+      spriteEl.alt = displayName;
+
+      // types
+      typesEl.innerHTML = '';
+      (p.types || []).forEach(t => {
+        const d = document.createElement('div');
+        d.className = 'type';
+        d.textContent = capitalize(t.type.name);
+        d.style.background = typeColor(t.type.name);
+        typesEl.appendChild(d);
+      });
+
+      heightEl.textContent = (p.height/10) + ' m';
+      weightEl.textContent = (p.weight/10) + ' kg';
+
+      statsEl.innerHTML = '';
+      (p.stats || []).forEach(s => {
+        const sp = document.createElement('div');
+        sp.className = 'stat';
+        sp.textContent = `${capitalize(s.stat.name)}: ${s.base_stat}`;
+        statsEl.appendChild(sp);
+      });
+    }
+
+    function chooseSprite(sprites) {
+      if (!sprites) return '';
+      // prefer official artwork then front_default, then other fallbacks
+      if (useShiny) {
+        return sprites.other?.['official-artwork']?.front_shiny || sprites.front_shiny || sprites.other?.dream_world?.front_shiny || sprites.other?.['official-artwork']?.front_default || sprites.front_default;
+      }
+      return sprites.other?.['official-artwork']?.front_default || sprites.front_default || sprites.other?.dream_world?.front_default || sprites.other?.['official-artwork']?.front_shiny || '';
+    }
+
+    function typeColor(type) {
+      // simple type color map
+      const map = {
+        normal: '#A8A77A', fire: '#EE8130', water: '#6390F0', electric: '#F7D02C', grass: '#7AC74C', ice: '#96D9D6', fighting: '#C22E28', poison: '#A33EA1', ground: '#E2BF65', flying: '#A98FF3', psychic: '#F95587', bug: '#A6B91A', rock: '#B6A136', ghost: '#735797', dragon: '#6F35FC', dark: '#705746', steel: '#B7B7CE', fairy: '#D685AD'
+      };
+      return map[type] || '#777';
+    }
+
+    // UI wiring
+    select.addEventListener('change', (e) => {
+      const url = e.target.value;
+      if (url) loadPokemon(url);
+    });
+
+    search.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const q = search.value.trim().toLowerCase();
+        if (!q) return;
+        // try to find in loaded list first
+        const found = pokemonList.find(p => p.name === q);
+        if (found) {
+          // select it in the list and load
+          const idx = pokemonList.indexOf(found);
+          select.selectedIndex = idx;
+          loadPokemon(found.url);
+          return;
+        }
+        // otherwise try direct API fetch by name
+        loadPokemon(`https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(q)}/`);
+      }
+    });
+
+    limitSelect.addEventListener('change', (e) => {
+      const v = Number(e.target.value) || 151;
+      loadPokemonList(v);
+    });
+
+    toggleShinyBtn.addEventListener('click', () => {
+      useShiny = !useShiny;
+      if (currentPokemon) renderPokemon(currentPokemon);
+      toggleShinyBtn.textContent = useShiny ? 'Using Shiny' : 'Toggle Shiny';
+    });
+
+    downloadBtn.addEventListener('click', async () => {
+      // simple screenshot of the preview area using canvas
+      const preview = document.querySelector('.preview');
+      try {
+        // Use HTMLCanvasElement drawImage from an <img> — we construct a canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = 600;
+        canvas.height = 420;
+        const ctx = canvas.getContext('2d');
+        // white background
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+
+        // draw sprite
+        if (spriteEl && spriteEl.src) {
+          const img = await loadImage(spriteEl.src);
+          // center image
+          const iw = 300;
+          const ih = 300;
+          ctx.drawImage(img, (canvas.width-iw)/2, 20, iw, ih);
+        }
+
+        // draw name
+        ctx.fillStyle = '#111';
+        ctx.font = 'bold 28px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(nameEl.textContent, canvas.width/2, 360);
+
+        // draw types
+        ctx.font = '16px sans-serif';
+        const types = Array.from(typesEl.children).map(n=>n.textContent).join(' / ');
+        ctx.fillText(types, canvas.width/2, 390);
+
+        const url = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${(currentPokemon && currentPokemon.name) || 'pokemon'}.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (err) {
+        alert('Failed to create preview image: ' + err.message);
+      }
+    });
+
+    function loadImage(src){
+      return new Promise((res, rej) => {
+        const i = new Image();
+        i.crossOrigin = 'anonymous';
+        i.onload = () => res(i);
+        i.onerror = rej;
+        i.src = src;
+      });
+    }
+
+    // init
+    loadPokemonList(Number(limitSelect.value) || 151);
+
+  </script>
+</body>
+</html>
