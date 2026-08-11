@@ -1,2 +1,2 @@
-Pokemon Card Creator
-   Create your own Pokemon
+My Practice
+  I am trying out techniques
